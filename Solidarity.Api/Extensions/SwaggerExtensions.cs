@@ -12,6 +12,20 @@ public static class SwaggerExtensions
 
         services.AddSwaggerGen(options =>
         {
+            var jwtSecurityScheme = new OpenApiSecurityScheme
+            {
+                Reference = new OpenApiReference
+                {
+                    Type = ReferenceType.SecurityScheme,
+                    Id = "Bearer"
+                },
+                Scheme = "bearer",
+                Name = "Bearer",
+                In = ParameterLocation.Header,
+                Type = SecuritySchemeType.Http,
+                BearerFormat = "JWT"
+            };
+
             options.SwaggerDoc(
                 "v1",
                 new OpenApiInfo
@@ -37,13 +51,7 @@ public static class SwaggerExtensions
                 new OpenApiSecurityRequirement
                 {
                     {
-                        new OpenApiSecurityScheme
-                        {
-                            Scheme = "bearer",
-                            Name = "Authorization",
-                            In = ParameterLocation.Header,
-                            Type = SecuritySchemeType.Http
-                        },
+                        jwtSecurityScheme,
                         Array.Empty<string>()
                     }
                 });

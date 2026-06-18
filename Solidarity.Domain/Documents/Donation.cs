@@ -9,8 +9,10 @@ public class Donation
     [BsonRepresentation(BsonType.ObjectId)]
     public string Id { get; set; } = string.Empty;
 
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid CampaignId { get; set; }
 
+    [BsonGuidRepresentation(GuidRepresentation.Standard)]
     public Guid DonorId { get; set; }
 
     public decimal Amount { get; set; }
