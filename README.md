@@ -17,15 +17,13 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
            ▼
 ┌─────────────────────┐
 │ Campaigns / Users   │
-└─────────────────────┘
-
+└──────────┬──────────┘
            │
            │ MongoDB
            ▼
 ┌─────────────────────┐
 │     Donations       │
-└─────────────────────┘
-
+└──────────┬──────────┘
            │
            │ RabbitMQ
            ▼
@@ -43,6 +41,27 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
 ┌─────────────────────┐
 │ Update TotalRaised  │
 └─────────────────────┘
+
+Observabilidade e monitoramento (complementar):
+
+┌─────────────────────┐   scrape   ┌─────────────────────┐   datasource   ┌─────────────────────┐
+│ /metrics e /health  │───────────▶│     Prometheus      │───────────────▶│       Grafana       │
+│ (Solidarity.Api)    │            └─────────────────────┘                └─────────────────────┘
+└─────────────────────┘
+
+┌─────────────────────┐   metrics   ┌─────────────────────┐
+│ cAdvisor +          │────────────▶│     Prometheus      │
+│ node-exporter       │             └─────────────────────┘
+└─────────────────────┘
+
+┌─────────────────────┐   monitoramento infra   ┌─────────────────────┐
+│ Zabbix Agent 2      │────────────────────────▶│    Zabbix Server    │
+└─────────────────────┘                         └─────────┬───────────┘
+                      │
+                      ▼
+                 ┌─────────────────────┐
+                 │      Zabbix Web     │
+                 └─────────────────────┘
 ```
 
 ---
@@ -57,6 +76,9 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
 - RabbitMQ
 - JWT Authentication
 - Swagger
+- Prometheus
+- Grafana
+- Zabbix
 - Docker
 - Docker Compose
 - Kubernetes
@@ -74,6 +96,7 @@ SolidarityConnection
 ├── Solidarity.Infrastructure
 ├── Solidarity.Shared
 ├── Solidarity.Worker
+├── observability
 ├── k8s
 └── docker-compose.yml
 ```
@@ -130,7 +153,7 @@ dotnet --version
 
 ---
 
-# Executando o Ambiente
+# Execução com Docker Compose
 
 Na raiz do projeto:
 
@@ -150,6 +173,123 @@ Containers esperados:
 solidarity-sqlserver
 solidarity-mongodb
 solidarity-rabbitmq
+solidarity-api
+solidarity-worker
+solidarity-prometheus
+solidarity-grafana
+solidarity-node-exporter
+solidarity-cadvisor
+solidarity-zabbix-db
+solidarity-zabbix-server
+solidarity-zabbix-web
+solidarity-zabbix-agent
+solidarity-zabbix-init
+```
+
+---
+
+## Acessos (Docker Compose)
+
+API e Swagger:
+
+```text
+http://localhost:8080/swagger
+```
+
+Health check:
+
+```text
+http://localhost:8080/health
+```
+
+Métricas da API:
+
+```text
+http://localhost:8080/metrics
+```
+
+RabbitMQ Management:
+
+```text
+http://localhost:15672
+```
+
+Credenciais RabbitMQ:
+
+```text
+guest / guest
+```
+
+# Observabilidade
+
+O ambiente Docker sobe observabilidade completa automaticamente:
+
+- Prometheus para coleta de métricas;
+- Grafana com datasource e dashboard provisionados;
+- Zabbix para monitoramento de infraestrutura, com host e template configurados por script sem ação manual.
+
+## Endpoints de saúde e métricas da API
+
+No Docker Compose, estes endpoints já ficam disponíveis diretamente em localhost:8080.
+
+Saúde:
+
+```text
+http://localhost:8080/health
+```
+
+Métricas Prometheus:
+
+```text
+http://localhost:8080/metrics
+```
+
+## Prometheus
+
+URL:
+
+```text
+http://localhost:9090
+```
+
+## Grafana
+
+URL:
+
+```text
+http://localhost:3000
+```
+
+Usuário/senha padrão:
+
+```text
+admin / Admin@123
+```
+
+Dashboard provisionado automaticamente:
+
+```text
+SolidarityConnection — Observabilidade
+```
+
+Métricas exibidas:
+
+- Taxa de requisições HTTP e latência da API (p50, p95, p99);
+- CPU, memória e rede por container (cAdvisor);
+- CPU e memória do host (node-exporter).
+
+## Zabbix
+
+URL:
+
+```text
+http://localhost:8082
+```
+
+Usuário/senha padrão:
+
+```text
+Admin / zabbix
 ```
 
 ---
@@ -207,25 +347,31 @@ kubectl get pvc -n solidarity
 
 ## 4) Acessar API e RabbitMQ
 
-Mapear a porta local para o Service da API:
+Mapear a porta local para o Service da API (mantenha este terminal aberto):
 
 ```bash
 kubectl port-forward -n solidarity svc/solidarity-api 8080:8080
 ```
 
-API:
+API e Swagger:
 
 ```text
 http://localhost:8080/swagger
 ```
 
-Swagger:
+Health check:
 
 ```text
-http://localhost:8080/swagger
+http://localhost:8080/health
 ```
 
-RabbitMQ Management:
+Métricas da API:
+
+```text
+http://localhost:8080/metrics
+```
+
+Em outro terminal, mapear RabbitMQ Management:
 
 ```bash
 kubectl port-forward -n solidarity svc/rabbitmq 15672:15672
@@ -241,7 +387,19 @@ Usuário/senha padrão:
 guest / guest
 ```
 
-## 5) Remover ambiente Kubernetes
+## 5) Endpoints: Docker Compose x Kubernetes
+
+Os endpoints no navegador são iguais nos dois cenários.
+No Kubernetes, eles só funcionam depois dos comandos de port-forward.
+
+```text
+API/Swagger:      http://localhost:8080/swagger
+Health:           http://localhost:8080/health
+Métricas da API:  http://localhost:8080/metrics
+RabbitMQ UI:      http://localhost:15672
+```
+
+## 6) Remover ambiente Kubernetes
 
 ```bash
 kubectl delete namespace solidarity
@@ -251,25 +409,6 @@ Para remover tambem os dados persistidos:
 
 ```bash
 kubectl delete pvc -n solidarity --all
-```
-
----
-
-# RabbitMQ Management
-
-URL:
-http://localhost:15672
-
-Usuário:
-
-```text
-guest
-```
-
-Senha:
-
-```text
-guest
 ```
 
 ---
