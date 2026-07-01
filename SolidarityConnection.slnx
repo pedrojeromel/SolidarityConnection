@@ -2,7 +2,6 @@
   <Folder Name="/Itens de Solução/">
     <File Path="Arquitetura.png" />
     <File Path="docker-compose.yml" />
-    <File Path="README.md" />
   </Folder>
   <Project Path="Solidarity.Application/Solidarity.Application.csproj" />
   <Project Path="Solidarity.Domain/Solidarity.Domain.csproj" />
