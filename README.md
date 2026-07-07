@@ -8,41 +8,37 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
 
 # Arquitetura
 
-```text
-┌─────────────────────┐
-│   Solidarity.Api    │
-└──────────┬──────────┘
-           │
-           │ SQL Server
-           ▼
-┌─────────────────────┐
-│ Campaigns / Users   │
-└─────────────────────┘
+## Fluxo funcional (negócio)
 
-           │
-           │ MongoDB
-           ▼
-┌─────────────────────┐
-│     Donations       │
-└─────────────────────┘
+```mermaid
+flowchart LR
+    U[Usuário / Cliente] --> API[Solidarity.Api]
+    API --> SQL[(SQL Server<br/>Users/Campaigns)]
+    API --> MONGO[(MongoDB<br/>Donations)]
+    API --> MQ[(RabbitMQ<br/>donation-received)]
+    MQ --> WORKER[Solidarity.Worker]
+    WORKER --> SQL
+```
 
-           │
-           │ RabbitMQ
-           ▼
-┌─────────────────────┐
-│ DonationReceived    │
-│      Event          │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Solidarity.Worker   │
-└──────────┬──────────┘
-           │
-           ▼
-┌─────────────────────┐
-│ Update TotalRaised  │
-└─────────────────────┘
+## Fluxo de observabilidade e monitoramento
+
+```mermaid
+flowchart LR
+    subgraph APP[Aplicação]
+      API2[Solidarity.Api<br/>/metrics e /health]
+    end
+
+    subgraph METRICS[Pipeline de métricas]
+      CAD[Zabbix > cAdvisor]
+      NODE[Zabbix > node-exporter]
+      PROM[Prometheus]
+      GRAF[Grafana]
+    end
+
+    API2 -->|scrape /metrics| PROM
+    CAD -->|scrape| PROM
+    NODE -->|scrape| PROM
+    PROM -->|datasource| GRAF
 ```
 
 ---
@@ -57,6 +53,9 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
 - RabbitMQ
 - JWT Authentication
 - Swagger
+- Prometheus
+- Grafana
+- Zabbix
 - Docker
 - Docker Compose
 - Kubernetes
@@ -74,6 +73,7 @@ SolidarityConnection
 ├── Solidarity.Infrastructure
 ├── Solidarity.Shared
 ├── Solidarity.Worker
+├── observability
 ├── k8s
 └── docker-compose.yml
 ```
@@ -89,8 +89,6 @@ Permissões:
 - Criar campanhas;
 - Atualizar campanhas;
 - Cancelar campanhas;
-
----
 
 ## Donor
 
@@ -115,8 +113,6 @@ docker --version
 docker compose version
 ```
 
----
-
 ## .NET SDK
 
 Instalar:
@@ -130,7 +126,9 @@ dotnet --version
 
 ---
 
-# Executando o Ambiente
+# Executando com Docker Compose
+
+## 1) Subir os serviços
 
 Na raiz do projeto:
 
@@ -138,7 +136,7 @@ Na raiz do projeto:
 docker compose up -d
 ```
 
-Verificar:
+## 2) Validar containers
 
 ```bash
 docker ps
@@ -150,6 +148,37 @@ Containers esperados:
 solidarity-sqlserver
 solidarity-mongodb
 solidarity-rabbitmq
+solidarity-api
+solidarity-worker
+solidarity-prometheus
+solidarity-grafana
+solidarity-node-exporter
+solidarity-cadvisor
+solidarity-zabbix-db
+solidarity-zabbix-server
+solidarity-zabbix-web
+solidarity-zabbix-agent
+solidarity-zabbix-init
+```
+
+## 3) Acessos no Docker Compose
+
+```text
+API/Swagger:      http://localhost:8080/swagger
+Health:           http://localhost:8080/health
+Métricas da API:  http://localhost:8080/metrics
+RabbitMQ UI:      http://localhost:15672
+Prometheus:       http://localhost:9090
+Grafana:          http://localhost:3000
+Zabbix Web:       http://localhost:8082
+```
+
+Credenciais padrão:
+
+```text
+RabbitMQ: guest / guest
+Grafana:  admin / Admin@123
+Zabbix:   Admin / zabbix
 ```
 
 ---
@@ -189,12 +218,13 @@ docker build -t solidarity-worker:local -f Solidarity.Worker/Dockerfile .
 kubectl apply -k k8s
 ```
 
-Os manifests entregues em `k8s/` incluem:
+Os manifests entregues em k8s/ incluem:
 
 - Namespace;
 - ConfigMaps;
 - Deployments;
-- Services.
+- Services;
+- Jobs;
 - PersistentVolumeClaims (SQL Server, MongoDB e RabbitMQ).
 
 ## 3) Validar recursos no cluster
@@ -205,49 +235,47 @@ kubectl get svc -n solidarity
 kubectl get pvc -n solidarity
 ```
 
-## 4) Acessar API e RabbitMQ
+## 4) Criar port-forwards
 
-Mapear a porta local para o Service da API:
+No Kubernetes, execute os port-forwards abaixo (cada comando em um terminal separado):
 
 ```bash
 kubectl port-forward -n solidarity svc/solidarity-api 8080:8080
-```
-
-API:
-
-```text
-http://localhost:8080/swagger
-```
-
-Swagger:
-
-```text
-http://localhost:8080/swagger
-```
-
-RabbitMQ Management:
-
-```bash
 kubectl port-forward -n solidarity svc/rabbitmq 15672:15672
+kubectl port-forward -n solidarity svc/prometheus 9090:9090
+kubectl port-forward -n solidarity svc/grafana 3000:3000
+kubectl port-forward -n solidarity svc/zabbix-web 8082:8080
 ```
+
+## 5) Acessos no Kubernetes
+
+Os endpoints abaixo ficam iguais aos do Compose, mas só funcionam após os port-forwards:
 
 ```text
-http://localhost:15672
+API/Swagger:      http://localhost:8080/swagger
+Health:           http://localhost:8080/health
+Métricas da API:  http://localhost:8080/metrics
+RabbitMQ UI:      http://localhost:15672
+Prometheus:       http://localhost:9090
+Grafana:          http://localhost:3000
+Zabbix Web:       http://localhost:8082
 ```
 
-Usuário/senha padrão:
+Credenciais padrão:
 
 ```text
-guest / guest
+RabbitMQ: guest / guest
+Grafana:  admin / Admin@123
+Zabbix:   Admin / zabbix
 ```
 
-## 5) Remover ambiente Kubernetes
+## 6) Remover ambiente Kubernetes
 
 ```bash
 kubectl delete namespace solidarity
 ```
 
-Para remover tambem os dados persistidos:
+Para remover também os dados persistidos:
 
 ```bash
 kubectl delete pvc -n solidarity --all
@@ -255,88 +283,29 @@ kubectl delete pvc -n solidarity --all
 
 ---
 
-# RabbitMQ Management
+# Endpoints da API e Como Acessar
 
-URL:
-http://localhost:15672
-
-Usuário:
+Com o ambiente rodando (Compose ou Kubernetes com port-forward), acesse primeiro o Swagger:
 
 ```text
-guest
+http://localhost:8080/swagger
 ```
 
-Senha:
+A partir dele, você pode testar os endpoints abaixo.
 
-```text
-guest
-```
-
----
-
-# Configuração da Base SQL
-
-Aplicar migrations:
-
-```bash
-dotnet ef database update \
---project Solidarity.Infrastructure \
---startup-project Solidarity.Api
-```
-
----
-
-# Executando a API localmente
-
-```bash
-dotnet run --project Solidarity.Api
-```
-
-Swagger:
-
-```text
-http://localhost:5131/swagger
-```
-
----
-
-# Executando o Worker localmente
-
-Em outro terminal:
-
-```bash
-dotnet run --project Solidarity.Worker
-```
-
----
-
-# Usuário Seed
+## Usuário Seed
 
 O sistema cria automaticamente um gestor inicial.
 
-Email:
-
 ```text
-manager@solidarity.com
+Email: manager@solidarity.com
+Senha: 123456
+Role:  NgoManager
 ```
 
-Senha:
+## Fluxo de Autenticação
 
-```text
-123456
-```
-
-Role:
-
-```text
-NgoManager
-```
-
----
-
-# Fluxo de Autenticação
-
-## Registrar usuário
+### Registrar usuário
 
 POST
 
@@ -355,9 +324,7 @@ Exemplo:
 }
 ```
 
----
-
-## Login
+### Login
 
 POST
 
@@ -382,11 +349,9 @@ Retorno:
 }
 ```
 
----
+## Campanhas
 
-# Campanhas
-
-## Criar Campanha
+### Criar campanha
 
 POST
 
@@ -412,9 +377,7 @@ Exemplo:
 }
 ```
 
----
-
-## Listar Campanhas
+### Listar campanhas
 
 GET
 
@@ -422,9 +385,7 @@ GET
 /api/campaigns
 ```
 
----
-
-## Campanhas Ativas
+### Campanhas ativas
 
 GET
 
@@ -437,11 +398,9 @@ Retorna:
 - FinancialGoal;
 - TotalRaised;
 
----
+## Doações
 
-# Doações
-
-## Criar Doação
+### Criar doação
 
 POST
 
@@ -466,6 +425,38 @@ Exemplo:
 
 ---
 
+# Configuração para Desenvolvimento Local
+
+## Aplicar migrations (base SQL)
+
+```bash
+dotnet ef database update \
+--project Solidarity.Infrastructure \
+--startup-project Solidarity.Api
+```
+
+## Executar API localmente
+
+```bash
+dotnet run --project Solidarity.Api
+```
+
+Swagger local:
+
+```text
+http://localhost:5131/swagger
+```
+
+## Executar Worker localmente
+
+Em outro terminal:
+
+```bash
+dotnet run --project Solidarity.Worker
+```
+
+---
+
 # Fluxo Assíncrono
 
 Ao receber uma doação:
@@ -478,7 +469,9 @@ Ao receber uma doação:
 
 ---
 
-# Banco SQL Server
+# Persistência e Mensageria
+
+## Banco SQL Server
 
 Tabelas:
 
@@ -487,9 +480,7 @@ Users
 Campaigns
 ```
 
----
-
-# Banco MongoDB
+## Banco MongoDB
 
 Coleções:
 
@@ -497,9 +488,7 @@ Coleções:
 donations
 ```
 
----
-
-# Mensageria
+## Mensageria
 
 Fila:
 
