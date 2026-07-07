@@ -9,3 +9,8 @@ resources:
   - 04-rabbitmq.yaml
   - 05-api.yaml
   - 06-worker.yaml
+  - 07-observability-configmaps.yaml
+  - 08-prometheus.yaml
+  - 09-grafana.yaml
+  - 10-zabbix.yaml
+  - 11-blackbox-exporter.yaml

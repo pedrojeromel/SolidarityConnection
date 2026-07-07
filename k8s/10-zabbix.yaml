@@ -1,0 +1,305 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-db
+  namespace: solidarity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-db
+  template:
+    metadata:
+      labels:
+        app: zabbix-db
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_USER
+              value: zabbix
+            - name: POSTGRES_PASSWORD
+              value: Zabbix@123
+            - name: POSTGRES_DB
+              value: zabbix
+          ports:
+            - containerPort: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-db
+  namespace: solidarity
+spec:
+  selector:
+    app: zabbix-db
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-server
+  namespace: solidarity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-server
+  template:
+    metadata:
+      labels:
+        app: zabbix-server
+    spec:
+      containers:
+        - name: zabbix-server
+          image: zabbix/zabbix-server-pgsql:alpine-7.0-latest
+          env:
+            - name: DB_SERVER_HOST
+              value: zabbix-db
+            - name: POSTGRES_USER
+              value: zabbix
+            - name: POSTGRES_PASSWORD
+              value: Zabbix@123
+            - name: POSTGRES_DB
+              value: zabbix
+          ports:
+            - containerPort: 10051
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-server
+  namespace: solidarity
+spec:
+  selector:
+    app: zabbix-server
+  ports:
+    - name: trapper
+      port: 10051
+      targetPort: 10051
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-web
+  namespace: solidarity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-web
+  template:
+    metadata:
+      labels:
+        app: zabbix-web
+    spec:
+      containers:
+        - name: zabbix-web
+          image: zabbix/zabbix-web-nginx-pgsql:alpine-7.0-latest
+          env:
+            - name: DB_SERVER_HOST
+              value: zabbix-db
+            - name: POSTGRES_USER
+              value: zabbix
+            - name: POSTGRES_PASSWORD
+              value: Zabbix@123
+            - name: POSTGRES_DB
+              value: zabbix
+            - name: ZBX_SERVER_HOST
+              value: zabbix-server
+            - name: PHP_TZ
+              value: America/Sao_Paulo
+          ports:
+            - containerPort: 8080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-web
+  namespace: solidarity
+spec:
+  selector:
+    app: zabbix-web
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: zabbix-agent
+  namespace: solidarity
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: zabbix-agent
+  template:
+    metadata:
+      labels:
+        app: zabbix-agent
+    spec:
+      containers:
+        - name: zabbix-agent
+          image: zabbix/zabbix-agent2:alpine-7.0-latest
+          env:
+            - name: ZBX_HOSTNAME
+              value: solidarity-k8s-agent
+            - name: ZBX_SERVER_HOST
+              value: "0.0.0.0/0"
+            - name: ZBX_SERVER_PORT
+              value: "10051"
+            - name: ZBX_ENABLEREMOTECOMMANDS
+              value: "1"
+            - name: ZBX_ACTIVE_ALLOW
+              value: "false"
+          ports:
+            - containerPort: 10050
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: zabbix-agent
+  namespace: solidarity
+spec:
+  selector:
+    app: zabbix-agent
+  ports:
+    - name: agent
+      port: 10050
+      targetPort: 10050
+      protocol: TCP
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: zabbix-init
+  namespace: solidarity
+spec:
+  backoffLimit: 3
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: zabbix-init
+          image: alpine:3.19
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              apk add --no-cache curl jq >/dev/null 2>&1
+
+              ZABBIX_URL="http://zabbix-web:8080/api_jsonrpc.php"
+              ZABBIX_USER="Admin"
+              ZABBIX_PASS="zabbix"
+              HOST_NAME="solidarity-k8s-host"
+              AGENT_DNS="zabbix-agent"
+              TEMPLATE_NAME="Linux by Zabbix agent"
+              GROUP_NAME="Linux servers"
+
+              # ─── Aguarda API ───────────────────────────────────────────────
+              echo "[init] Aguardando Zabbix API..."
+              until curl -sf -o /dev/null -w "%{http_code}" \
+                -X POST "$ZABBIX_URL" \
+                -H "Content-Type: application/json" \
+                -d '{"jsonrpc":"2.0","method":"apiinfo.version","params":{},"id":1}' | grep -q "200"; do
+                echo "[init] Ainda aguardando..."
+                sleep 5
+              done
+              echo "[init] Zabbix API disponivel."
+
+              # ─── Login com retry ───────────────────────────────────────────
+              AUTH=""
+              ATTEMPT=1
+              MAX_ATTEMPTS=24
+              while [ "$ATTEMPT" -le "$MAX_ATTEMPTS" ]; do
+                LOGIN=$(curl -s -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                  -d "{\"jsonrpc\":\"2.0\",\"method\":\"user.login\",\"params\":{\"username\":\"$ZABBIX_USER\",\"password\":\"$ZABBIX_PASS\"},\"id\":1}")
+                AUTH=$(echo "$LOGIN" | jq -r '.result // empty')
+                if [ -z "$AUTH" ]; then
+                  LOGIN=$(curl -s -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                    -d "{\"jsonrpc\":\"2.0\",\"method\":\"user.login\",\"params\":{\"user\":\"$ZABBIX_USER\",\"password\":\"$ZABBIX_PASS\"},\"id\":1}")
+                  AUTH=$(echo "$LOGIN" | jq -r '.result // empty')
+                fi
+                if [ -n "$AUTH" ]; then
+                  echo "[init] Autenticado com sucesso."
+                  break
+                fi
+                ERR=$(echo "$LOGIN" | jq -r '.error.data // .error.message // "sem detalhes"')
+                echo "[init] Login indisponivel ($ATTEMPT/$MAX_ATTEMPTS): $ERR"
+                ATTEMPT=$((ATTEMPT + 1))
+                sleep 5
+              done
+              if [ -z "$AUTH" ]; then
+                echo "[init] ERRO: falha ao autenticar apos $MAX_ATTEMPTS tentativas."
+                exit 1
+              fi
+
+              # ─── Desabilita host padrao (evita alerta falso 127.0.0.1:10050)
+              DEFAULT_ID=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                -d "{\"jsonrpc\":\"2.0\",\"method\":\"host.get\",\"params\":{\"filter\":{\"host\":[\"Zabbix server\"]}},\"auth\":\"$AUTH\",\"id\":2}" \
+                | jq -r '.result[0].hostid // empty')
+              if [ -n "$DEFAULT_ID" ]; then
+                DEF_STATUS=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                  -d "{\"jsonrpc\":\"2.0\",\"method\":\"host.get\",\"params\":{\"output\":[\"status\"],\"hostids\":[\"$DEFAULT_ID\"]},\"auth\":\"$AUTH\",\"id\":3}" \
+                  | jq -r '.result[0].status // empty')
+                if [ "$DEF_STATUS" = "0" ]; then
+                  curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                    -d "{\"jsonrpc\":\"2.0\",\"method\":\"host.update\",\"params\":{\"hostid\":\"$DEFAULT_ID\",\"status\":1},\"auth\":\"$AUTH\",\"id\":4}" >/dev/null
+                  echo "[init] Host padrao 'Zabbix server' desabilitado."
+                fi
+              fi
+
+              # ─── Grupo ─────────────────────────────────────────────────────
+              GROUP_ID=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                -d "{\"jsonrpc\":\"2.0\",\"method\":\"hostgroup.get\",\"params\":{\"filter\":{\"name\":[\"$GROUP_NAME\"]}},\"auth\":\"$AUTH\",\"id\":5}" \
+                | jq -r '.result[0].groupid // empty')
+              if [ -z "$GROUP_ID" ]; then
+                GROUP_ID=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                  -d "{\"jsonrpc\":\"2.0\",\"method\":\"hostgroup.get\",\"params\":{\"limit\":1},\"auth\":\"$AUTH\",\"id\":6}" \
+                  | jq -r '.result[0].groupid // empty')
+              fi
+              echo "[init] Grupo ID: $GROUP_ID"
+
+              # ─── Template ──────────────────────────────────────────────────
+              TEMPLATE_ID=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                -d "{\"jsonrpc\":\"2.0\",\"method\":\"template.get\",\"params\":{\"filter\":{\"host\":[\"$TEMPLATE_NAME\"]}},\"auth\":\"$AUTH\",\"id\":7}" \
+                | jq -r '.result[0].templateid // empty')
+              if [ -n "$TEMPLATE_ID" ]; then
+                echo "[init] Template '$TEMPLATE_NAME' ID: $TEMPLATE_ID"
+                TEMPLATES=",\"templates\":[{\"templateid\":\"$TEMPLATE_ID\"}]"
+              else
+                echo "[init] Template nao encontrado — host criado sem template."
+                TEMPLATES=""
+              fi
+
+              # ─── Host ja existe? ───────────────────────────────────────────
+              EXISTING=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                -d "{\"jsonrpc\":\"2.0\",\"method\":\"host.get\",\"params\":{\"filter\":{\"host\":[\"$HOST_NAME\"]}},\"auth\":\"$AUTH\",\"id\":8}" \
+                | jq -r '.result[0].hostid // empty')
+              if [ -n "$EXISTING" ]; then
+                echo "[init] Host '$HOST_NAME' ja existe (id: $EXISTING). Nada a fazer."
+                exit 0
+              fi
+
+              # ─── Cria host ─────────────────────────────────────────────────
+              RESP=$(curl -sf -X POST "$ZABBIX_URL" -H "Content-Type: application/json" \
+                -d "{\"jsonrpc\":\"2.0\",\"method\":\"host.create\",\"params\":{\"host\":\"$HOST_NAME\",\"groups\":[{\"groupid\":\"$GROUP_ID\"}]$TEMPLATES,\"interfaces\":[{\"type\":1,\"main\":1,\"useip\":0,\"ip\":\"\",\"dns\":\"$AGENT_DNS\",\"port\":\"10050\"}]},\"auth\":\"$AUTH\",\"id\":9}")
+              HOST_ID=$(echo "$RESP" | jq -r '.result.hostids[0] // empty')
+              if [ -n "$HOST_ID" ]; then
+                echo "[init] Host '$HOST_NAME' criado com sucesso (id: $HOST_ID)."
+              else
+                echo "[init] ERRO ao criar host: $(echo "$RESP" | jq -r '.error.data // .error.message // empty')"
+                exit 1
+              fi
+
+              echo "[init] Zabbix configurado no Kubernetes."
