@@ -48,8 +48,13 @@ export function TransparencyPanel() {
     void load()
   }, [load])
 
+  // Passar window.clearTimeout desacoplado do window quebra em alguns contextos
+  // (o metodo nativo perde o "this"). Chamamos dentro de uma arrow.
   useEffect(
-    () => () => timers.current.forEach(window.clearTimeout),
+    () => () => {
+      timers.current.forEach((id) => window.clearTimeout(id))
+      timers.current = []
+    },
     [],
   )
 
