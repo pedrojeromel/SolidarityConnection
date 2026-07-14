@@ -23,7 +23,10 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
 
   // Navegar fecha o menu mobile: sem isso o painel fica aberto sobre a tela nova.
-  useEffect(() => setOpen(false), [location.pathname])
+  // Chaves obrigatorias: o retorno de um efeito e tratado como funcao de limpeza.
+  useEffect(() => {
+    setOpen(false)
+  }, [location.pathname])
 
   const links = isManager
     ? [...PUBLIC_LINKS, { to: '/gestor', label: 'Gestão' }]

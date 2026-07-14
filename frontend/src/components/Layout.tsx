@@ -7,7 +7,12 @@ export function Layout() {
   const { pathname } = useLocation()
 
   // Trocar de rota volta ao topo: sem isso o usuario cai no meio da pagina nova.
-  useEffect(() => window.scrollTo(0, 0), [pathname])
+  // O corpo precisa de chaves: uma arrow sem chaves devolveria o retorno de
+  // window.scrollTo, e o React trata o retorno do efeito como funcao de limpeza
+  // — chamando-o depois e quebrando com "... is not a function".
+  useEffect(() => {
+    window.scrollTo(0, 0)
+  }, [pathname])
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden">
