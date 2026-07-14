@@ -16,6 +16,26 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ### Adicionado
 
+- versionamento semantico automatico a cada push na main
+
+### Corrigido
+
+- corrige cache do frontend no nginx e commit de release no CI
+- protege intervalo vazio na geracao das notas da release
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:1.1.0
+ghcr.io/pedrojeromel/solidarity-worker:1.1.0
+ghcr.io/pedrojeromel/solidarity-frontend:1.1.0
+```
+---
+
+## [1.1.0] — 2026-07-14
+
+### Adicionado
+
 - Site institucional na home: hero, indicadores de impacto, história da ONG,
   como ajudar, depoimentos, parceiros e chamada final;
 - Páginas `/sobre` (missão, visão, valores e linha do tempo) e `/contato`;
