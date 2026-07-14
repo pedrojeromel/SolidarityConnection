@@ -12,7 +12,8 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
 
 ```mermaid
 flowchart LR
-    U[Usuário / Cliente] --> API[Solidarity.Api]
+    U[Usuário] --> FRONT[Frontend React<br/>:3001]
+    FRONT --> API[Solidarity.Api]
     API --> SQL[(SQL Server<br/>Users/Campaigns)]
     API --> MONGO[(MongoDB<br/>Donations)]
     API --> MQ[(RabbitMQ<br/>donation-received)]
@@ -47,6 +48,7 @@ flowchart LR
 
 - .NET 10
 - ASP.NET Core Web API
+- React + TypeScript + Vite + Tailwind CSS
 - Entity Framework Core
 - SQL Server
 - MongoDB
@@ -164,6 +166,7 @@ solidarity-zabbix-init
 ## 3) Acessos no Docker Compose
 
 ```text
+Frontend (React): http://localhost:3001
 API/Swagger:      http://localhost:8080/swagger
 Health:           http://localhost:8080/health
 Métricas da API:  http://localhost:8080/metrics
@@ -179,6 +182,66 @@ Credenciais padrão:
 RabbitMQ: guest / guest
 Grafana:  admin / Admin@123
 Zabbix:   Admin / zabbix
+```
+
+---
+
+# Frontend (React)
+
+Interface web da plataforma: painel de transparência público, cadastro de doador,
+login, doação e área de gestão de campanhas.
+
+Stack: React + TypeScript + Vite + Tailwind CSS.
+
+## Executando junto do Docker Compose
+
+Já sobe com `docker compose up -d`:
+
+```text
+http://localhost:3001
+```
+
+## Executando em modo desenvolvimento
+
+Com a API no ar (`docker compose up -d api`):
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+```text
+http://localhost:5173
+```
+
+A URL da API é configurável por variável de ambiente (ver `frontend/.env.example`):
+
+```text
+VITE_API_URL=http://localhost:8080
+```
+
+## Telas
+
+- `/` — Painel de Transparência (público): campanhas ativas, meta e valor arrecadado;
+- `/cadastro` — cadastro de doador (com máscara e validação de CPF);
+- `/login` — autenticação (JWT);
+- `/gestor` — gestão de campanhas (restrito à role NgoManager).
+
+## Demonstração do fluxo assíncrono
+
+Ao confirmar uma doação, a API responde 202 (evento publicado na fila) e a barra de
+progresso da campanha entra em estado "processando na fila". O painel recarrega
+automaticamente e a barra sobe assim que o Worker consome o evento do RabbitMQ e
+atualiza o valor arrecadado — evidenciando, na interface, o processamento assíncrono.
+
+## CORS
+
+A API libera as origens do frontend em `Cors:AllowedOrigins` (`appsettings.json`):
+
+```text
+http://localhost:5173   (Vite em modo dev)
+http://localhost:3001   (container do frontend)
 ```
 
 ---
@@ -210,6 +273,7 @@ Na raiz do projeto:
 ```bash
 docker build -t solidarity-api:local -f Solidarity.Api/Dockerfile .
 docker build -t solidarity-worker:local -f Solidarity.Worker/Dockerfile .
+docker build -t solidarity-frontend:local ./frontend
 ```
 
 ## 2) Aplicar manifests Kubernetes
@@ -241,6 +305,7 @@ No Kubernetes, execute os port-forwards abaixo (cada comando em um terminal sepa
 
 ```bash
 kubectl port-forward -n solidarity svc/solidarity-api 8080:8080
+kubectl port-forward -n solidarity svc/solidarity-frontend 3001:80
 kubectl port-forward -n solidarity svc/rabbitmq 15672:15672
 kubectl port-forward -n solidarity svc/prometheus 9090:9090
 kubectl port-forward -n solidarity svc/grafana 3000:3000

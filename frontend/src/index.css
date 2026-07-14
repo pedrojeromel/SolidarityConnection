@@ -1,0 +1,128 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-void: #05070d;
+  --color-deep: #0a0f1c;
+  --color-surface: #0f1626;
+
+  --color-neon: #22d3ee;
+  --color-neon-soft: #67e8f9;
+  --color-violet: #8b5cf6;
+  --color-magenta: #e879f9;
+
+  --color-success: #34d399;
+  --color-danger: #fb7185;
+
+  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+@keyframes grid-drift {
+  from {
+    background-position: 0 0;
+  }
+  to {
+    background-position: 0 60px;
+  }
+}
+
+@keyframes pulse-glow {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shimmer {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(250%);
+  }
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--color-void);
+  color: #e2e8f0;
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Malha em perspectiva que da o tom futurista ao fundo. */
+.bg-grid {
+  background-image:
+    linear-gradient(rgba(34, 211, 238, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(34, 211, 238, 0.07) 1px, transparent 1px);
+  background-size: 60px 60px;
+  animation: grid-drift 12s linear infinite;
+}
+
+.glass {
+  background: linear-gradient(
+    160deg,
+    rgba(255, 255, 255, 0.07),
+    rgba(255, 255, 255, 0.02)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.glass-hover {
+  transition:
+    border-color 220ms ease,
+    transform 220ms ease,
+    box-shadow 220ms ease;
+}
+
+.glass-hover:hover {
+  border-color: rgba(34, 211, 238, 0.5);
+  transform: translateY(-3px);
+  box-shadow: 0 18px 45px -22px rgba(34, 211, 238, 0.75);
+}
+
+.text-glow {
+  text-shadow: 0 0 22px rgba(34, 211, 238, 0.45);
+}
+
+.animate-rise {
+  animation: rise 500ms ease-out both;
+}
+
+.animate-pulse-glow {
+  animation: pulse-glow 2.4s ease-in-out infinite;
+}
+
+/* Brilho que corre sobre a barra enquanto o Worker ainda nao processou a fila. */
+.shimmer::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.35),
+    transparent
+  );
+  animation: shimmer 1.6s ease-in-out infinite;
+}

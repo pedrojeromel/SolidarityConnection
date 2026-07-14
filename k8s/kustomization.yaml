@@ -14,3 +14,4 @@ resources:
   - 09-grafana.yaml
   - 10-zabbix.yaml
   - 11-blackbox-exporter.yaml
+  - 12-frontend.yaml

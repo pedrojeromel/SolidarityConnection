@@ -45,10 +45,16 @@ jobs:
         include:
           - service: api
             image: solidarity-api
+            context: .
             dockerfile: Solidarity.Api/Dockerfile
           - service: worker
             image: solidarity-worker
+            context: .
             dockerfile: Solidarity.Worker/Dockerfile
+          - service: frontend
+            image: solidarity-frontend
+            context: ./frontend
+            dockerfile: ./frontend/Dockerfile
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -76,7 +82,7 @@ jobs:
       - name: Build and push
         uses: docker/build-push-action@v6
         with:
-          context: .
+          context: ${{ matrix.context }}
           file: ${{ matrix.dockerfile }}
           push: ${{ github.event_name != 'pull_request' }}
           tags: ${{ steps.meta.outputs.tags }}

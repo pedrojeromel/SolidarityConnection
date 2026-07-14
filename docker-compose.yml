@@ -68,6 +68,20 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # O browser do usuario chama a API pelo host, nao pela rede do compose.
+        VITE_API_URL: http://localhost:8080
+    container_name: solidarity-frontend
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+    restart: unless-stopped
+
   # ─────────────────────────────────────────
   # Observabilidade — Prometheus + Grafana
   # ─────────────────────────────────────────
