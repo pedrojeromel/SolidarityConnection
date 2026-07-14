@@ -12,6 +12,21 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [1.1.1] — 2026-07-14
+
+### Documentação
+
+- consolida a secao 1.1.0 do changelog
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:1.1.1
+ghcr.io/pedrojeromel/solidarity-worker:1.1.1
+ghcr.io/pedrojeromel/solidarity-frontend:1.1.1
+```
+---
+
 ## [1.1.0] — 2026-07-14
 
 Primeira release publicada pelo pipeline automático.

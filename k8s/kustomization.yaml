@@ -24,8 +24,8 @@ resources:
 # Rollback: volte newTag para a versao anterior (ou use `kubectl rollout undo`).
 images:
   - name: solidarity-api
-    newTag: "1.1.0"
+    newTag: "1.1.1"
   - name: solidarity-worker
-    newTag: "1.1.0"
+    newTag: "1.1.1"
   - name: solidarity-frontend
-    newTag: "1.1.0"
+    newTag: "1.1.1"
