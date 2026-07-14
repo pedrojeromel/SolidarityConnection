@@ -12,6 +12,21 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [1.2.0] — 2026-07-14
+
+### Adicionado
+
+- script de deploy com validacao de versao e modo GHCR
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:1.2.0
+ghcr.io/pedrojeromel/solidarity-worker:1.2.0
+ghcr.io/pedrojeromel/solidarity-frontend:1.2.0
+```
+---
+
 ## [1.1.3] — 2026-07-14
 
 ### Corrigido
