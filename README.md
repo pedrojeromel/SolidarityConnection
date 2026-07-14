@@ -192,15 +192,27 @@ dotnet --version
 
 # Executando com Docker Compose
 
-## Forma recomendada (script)
-
-O script sobe a aplicação sempre na versão correta e **confirma no final qual
-versão ficou de fato em execução**:
+**Não é necessário compilar nada.** As imagens da API, do Worker e do Frontend são
+publicadas pelo pipeline de CI no GitHub Container Registry (GHCR) e baixadas
+prontas — todos rodam exatamente o mesmo artefato.
 
 ```bash
-./scripts/deploy.sh                 # constrói as imagens a partir do código-fonte
-./scripts/deploy.sh --ghcr          # baixa as imagens publicadas pelo CI (GHCR)
-./scripts/deploy.sh --ghcr 1.1.0    # baixa uma versão específica (rollback)
+docker compose pull
+docker compose up -d
+```
+
+Só isso. Acesse http://localhost:3001.
+
+## Forma recomendada (script)
+
+O script baixa a versão correta e **confirma no final qual versão ficou de fato
+em execução** (falha se divergir):
+
+```bash
+./scripts/deploy.sh              # baixa a versão do arquivo VERSION
+./scripts/deploy.sh 1.1.0        # baixa uma versão específica (rollback)
+./scripts/deploy.sh latest       # baixa a versão mais recente publicada
+./scripts/deploy.sh --build      # compila do código-fonte (só para desenvolvimento)
 ```
 
 Saída esperada:
@@ -221,12 +233,18 @@ passar silenciosamente.
 
 | Modo | O que faz | Quando usar |
 |---|---|---|
-| padrão (local) | Compila o código atual e gera a imagem | Desenvolvimento; validar o que está no seu working tree |
-| `--ghcr` | Baixa a imagem publicada pelo pipeline | Validar exatamente o artefato do CI; rollback |
+| padrão | Baixa a imagem publicada pelo pipeline (GHCR) | Sempre — inclusive para corrigir/avaliar o projeto |
+| `--build` | Compila o código atual e gera a imagem | Apenas em desenvolvimento, para testar alterações locais |
 
-> O `.env` (que define `APP_VERSION`) é ignorado pelo git e **não vem no `git pull`**.
-> Por isso o script sempre o ressincroniza a partir do arquivo `VERSION` — sem isso,
-> é fácil o Compose subir uma versão diferente da que está no repositório.
+Compilar do código-fonte usa a sobreposição `docker-compose.build.yml`:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+```
+
+> Sem a variável `APP_VERSION`, o Compose usa a tag `latest` (versão mais recente
+> publicada). Para fixar uma versão específica, defina `APP_VERSION=1.2.0` — é assim
+> que se faz o rollback.
 
 ## Subindo tudo manualmente
 
@@ -558,24 +576,12 @@ Contexto esperado no Docker Desktop:
 docker-desktop
 ```
 
-## 1) Gerar as imagens locais
+## 1) Imagens
 
-As imagens são versionadas: a tag deve ser a mesma definida no arquivo `VERSION`
-e em `k8s/kustomization.yaml` (hoje, `1.0.0`).
+Nada a fazer: os manifests apontam para as imagens publicadas no GHCR
+(`ghcr.io/pedrojeromel/solidarity-*`), e o cluster as baixa sozinho.
 
-Na raiz do projeto:
-
-```bash
-docker build -t solidarity-api:1.0.0 --build-arg APP_VERSION=1.0.0 -f Solidarity.Api/Dockerfile .
-docker build -t solidarity-worker:1.0.0 --build-arg APP_VERSION=1.0.0 -f Solidarity.Worker/Dockerfile .
-docker build -t solidarity-frontend:1.0.0 --build-arg APP_VERSION=1.0.0 ./frontend
-```
-
-Alternativamente, o Compose já constrói as imagens com as tags corretas:
-
-```bash
-docker compose build
-```
+A versão utilizada é controlada em `k8s/kustomization.yaml` (campo `newTag`).
 
 ## 2) Aplicar manifests Kubernetes
 

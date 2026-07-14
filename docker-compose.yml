@@ -40,14 +40,18 @@ services:
       retries: 10
     restart: unless-stopped
 
+  # As imagens da aplicacao vem PRONTAS do GitHub Container Registry, geradas
+  # pelo pipeline de CI. Ninguem precisa compilar nada: todos rodam exatamente
+  # o mesmo artefato publicado.
+  #
+  # APP_VERSION fixa uma versao (ex.: 1.2.0) e permite rollback.
+  # Sem ele, usa "latest" (a versao mais recente publicada).
+  #
+  # Para compilar a partir do codigo-fonte (desenvolvimento), use a sobreposicao:
+  #   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+
   api:
-    build:
-      context: .
-      dockerfile: Solidarity.Api/Dockerfile
-      args:
-        APP_VERSION: ${APP_VERSION:-1.0.0}
-    # Tag imutavel por versao: e o que permite voltar para um build anterior.
-    image: solidarity-api:${APP_VERSION:-1.0.0}
+    image: ghcr.io/pedrojeromel/solidarity-api:${APP_VERSION:-latest}
     container_name: solidarity-api
     ports:
       - "8080:8080"
@@ -67,12 +71,7 @@ services:
     restart: unless-stopped
 
   worker:
-    build:
-      context: .
-      dockerfile: Solidarity.Worker/Dockerfile
-      args:
-        APP_VERSION: ${APP_VERSION:-1.0.0}
-    image: solidarity-worker:${APP_VERSION:-1.0.0}
+    image: ghcr.io/pedrojeromel/solidarity-worker:${APP_VERSION:-latest}
     container_name: solidarity-worker
     depends_on:
       sqlserver:
@@ -82,14 +81,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-      args:
-        # O browser do usuario chama a API pelo host, nao pela rede do compose.
-        VITE_API_URL: http://localhost:8080
-        APP_VERSION: ${APP_VERSION:-1.0.0}
-    image: solidarity-frontend:${APP_VERSION:-1.0.0}
+    image: ghcr.io/pedrojeromel/solidarity-frontend:${APP_VERSION:-latest}
     container_name: solidarity-frontend
     ports:
       - "3001:80"

@@ -20,12 +20,17 @@ resources:
   - 12-frontend.yaml
 
 # Ponto unico de controle da versao publicada no cluster.
+# As imagens vem do GHCR (publicadas pelo CI): ninguem precisa compilar nada.
+#
 # Deploy de uma nova versao: altere newTag e rode `kubectl apply -k k8s`.
 # Rollback: volte newTag para a versao anterior (ou use `kubectl rollout undo`).
 images:
   - name: solidarity-api
+    newName: ghcr.io/pedrojeromel/solidarity-api
     newTag: "1.2.1"
   - name: solidarity-worker
+    newName: ghcr.io/pedrojeromel/solidarity-worker
     newTag: "1.2.1"
   - name: solidarity-frontend
+    newName: ghcr.io/pedrojeromel/solidarity-frontend
     newTag: "1.2.1"

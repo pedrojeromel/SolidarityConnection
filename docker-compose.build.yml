@@ -1,0 +1,37 @@
+# Sobreposicao para DESENVOLVIMENTO: compila as imagens a partir do codigo-fonte
+# local, em vez de baixar as publicadas pelo CI.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.build.yml up -d --build
+#
+# Atalho: ./scripts/deploy.sh --build
+#
+# O padrao (docker-compose.yml sozinho) baixa as imagens do GHCR — e o que
+# garante que todos rodem exatamente o mesmo artefato.
+
+services:
+
+  api:
+    build:
+      context: .
+      dockerfile: Solidarity.Api/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: ghcr.io/pedrojeromel/solidarity-api:${APP_VERSION:-dev}
+
+  worker:
+    build:
+      context: .
+      dockerfile: Solidarity.Worker/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: ghcr.io/pedrojeromel/solidarity-worker:${APP_VERSION:-dev}
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        # O browser do usuario chama a API pelo host, nao pela rede do compose.
+        VITE_API_URL: http://localhost:8080
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: ghcr.io/pedrojeromel/solidarity-frontend:${APP_VERSION:-dev}

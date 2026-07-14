@@ -1,26 +1,26 @@
 #!/bin/sh
-# Sobe a aplicacao no Docker sempre com a versao correta, e confirma no fim
-# qual versao ficou realmente em execucao.
+# Sobe a aplicacao no Docker usando as imagens publicadas pelo CI no GHCR,
+# e confirma no final qual versao ficou realmente em execucao.
 #
-#   ./scripts/deploy.sh                 constroi do codigo-fonte local (padrao)
-#   ./scripts/deploy.sh --ghcr          baixa as imagens publicadas pelo CI
-#   ./scripts/deploy.sh --ghcr 1.1.0    baixa uma versao especifica (rollback)
+#   ./scripts/deploy.sh              baixa a versao do arquivo VERSION (padrao)
+#   ./scripts/deploy.sh 1.1.0        baixa uma versao especifica (rollback)
+#   ./scripts/deploy.sh latest       baixa a versao mais recente publicada
+#   ./scripts/deploy.sh --build      compila a partir do codigo-fonte local (dev)
 #
-# Sem isto e facil o Compose subir uma versao e o repositorio estar em outra:
-# o .env nao vem no git pull, entao ele precisa ser ressincronizado com VERSION.
+# Ninguem precisa compilar para rodar o projeto: todos executam exatamente o
+# mesmo artefato que o pipeline gerou.
 
 set -e
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-MODE="local"
+MODE="registry"
 VERSION=""
 
 for arg in "$@"; do
   case "$arg" in
-    --ghcr) MODE="ghcr" ;;
-    --local) MODE="local" ;;
+    --build) MODE="build" ;;
     -*) echo "Opcao desconhecida: $arg" >&2; exit 1 ;;
     *) VERSION="$arg" ;;
   esac
@@ -34,22 +34,20 @@ fi
 echo "Versao alvo: $VERSION  (modo: $MODE)"
 echo
 
-# Mantem .env, package.json e kustomization alinhados com a versao alvo.
-sh scripts/set-version.sh "$VERSION" > /dev/null
 echo "APP_VERSION=$VERSION" > .env
 
 SERVICES="api worker frontend"
 
-if [ "$MODE" = "ghcr" ]; then
-  COMPOSE="docker compose -f docker-compose.yml -f docker-compose.ghcr.yml"
+if [ "$MODE" = "build" ]; then
+  COMPOSE="docker compose -f docker-compose.yml -f docker-compose.build.yml"
 
-  echo "Baixando imagens publicadas do GHCR..."
-  $COMPOSE pull $SERVICES
+  echo "Compilando as imagens a partir do codigo-fonte..."
+  $COMPOSE build $SERVICES
 else
   COMPOSE="docker compose"
 
-  echo "Construindo imagens a partir do codigo-fonte..."
-  $COMPOSE build $SERVICES
+  echo "Baixando as imagens publicadas pelo CI (GHCR)..."
+  $COMPOSE pull $SERVICES
 fi
 
 echo
@@ -81,10 +79,14 @@ RUNNING=$(curl -s http://localhost:8080/version 2>/dev/null || echo "")
 echo "  API      : ${RUNNING:-sem resposta}"
 docker logs solidarity-worker 2>&1 | grep -i "versao" | tail -1 | sed 's/^/  Worker   : /'
 echo "  Frontend : http://localhost:3001"
+echo "  Imagens  : ghcr.io/pedrojeromel/solidarity-{api,worker,frontend}:$VERSION"
 echo
 
-# A validacao que importa: a versao no ar e a versao alvo?
-if echo "$RUNNING" | grep -q "\"version\":\"$VERSION\""; then
+# Em "latest" a versao exata nao e conhecida de antemao; nos demais casos,
+# a versao em execucao tem obrigatoriamente que ser a versao alvo.
+if [ "$VERSION" = "latest" ] || [ "$MODE" = "build" ]; then
+  echo "OK: containers no ar."
+elif echo "$RUNNING" | grep -q "\"version\":\"$VERSION\""; then
   echo "OK: a versao em execucao ($VERSION) confere com a versao alvo."
 else
   echo "ATENCAO: a versao em execucao NAO confere com $VERSION." >&2
