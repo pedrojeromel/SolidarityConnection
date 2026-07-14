@@ -12,6 +12,21 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [1.3.0] — 2026-07-14
+
+### Adicionado
+
+- passa a rodar as imagens publicadas no GHCR, sem build local
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:1.3.0
+ghcr.io/pedrojeromel/solidarity-worker:1.3.0
+ghcr.io/pedrojeromel/solidarity-frontend:1.3.0
+```
+---
+
 ## [1.2.1] — 2026-07-14
 
 ### Corrigido
