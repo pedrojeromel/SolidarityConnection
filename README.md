@@ -331,27 +331,71 @@ http://localhost:3001   (container do frontend)
 
 # CI/CD (GitHub Actions)
 
-Pipeline em `.github/workflows/ci.yml`, disparado a cada push na `main`,
-em pull requests e por tags `v*`.
+Pipeline em `.github/workflows/ci.yml`, disparado a cada push na `main` e em
+pull requests. **Todo push na `main` gera automaticamente uma nova versão final.**
 
 ```text
-version  ──>  build (.NET)  ──>  docker (api | worker | frontend)
-resolve       restore              build da imagem
-a versão      build                push para o GHCR
-              test (58)            tags: versão, sha e latest
+version  ──>  build (.NET)  ──>  docker (api|worker|frontend)  ──>  release
+calcula       restore            build das imagens                  tag git
+o semver      build              push para o GHCR                   GitHub Release
+              test (58)          tags imutáveis                     CHANGELOG
 ```
 
-- O job `build` compila a solution e roda os testes;
-- O job `docker` só executa se o `build` passar — **imagem quebrada não é publicada**;
-- Em pull request as imagens são construídas, mas não publicadas.
+- O job `docker` só executa se o `build` **e os testes** passarem —
+  imagem quebrada não é publicada;
+- O job `release` só executa se as imagens forem publicadas — nunca existe
+  uma tag git sem as imagens correspondentes;
+- Em pull request tudo é construído e testado, mas nada é publicado.
 
-Imagens publicadas no GitHub Container Registry:
+## Versionamento automático (Conventional Commits)
+
+A versão é calculada a partir das mensagens de commit desde a última tag:
+
+| Prefixo do commit | Incremento | Exemplo |
+|---|---|---|
+| `feat:` | **minor** (1.1.0 → 1.2.0) | `feat: painel de doações recorrentes` |
+| `fix:`, `perf:`, `refactor:`, `docs:`, `chore:` | **patch** (1.1.0 → 1.1.1) | `fix: corrige cálculo da meta` |
+| `feat!:` ou `BREAKING CHANGE` no corpo | **major** (1.1.0 → 2.0.0) | `feat!: nova API de doações` |
+
+Commits fora do padrão são tratados como `patch`. Escopos são aceitos
+(`feat(front): ...`).
+
+Ao publicar, o pipeline:
+
+1. Calcula a próxima versão e **aborta se a tag já existir** (nunca sobrescreve
+   uma versão publicada);
+2. Publica as três imagens no GHCR;
+3. Cria a tag `vX.Y.Z` e a **GitHub Release** com as notas geradas dos commits;
+4. Devolve a versão ao repositório (`VERSION`, `.env`, `frontend/package.json`,
+   `k8s/kustomization.yaml`) e atualiza o `CHANGELOG.md`, com o commit
+   `chore(release): X.Y.Z [skip ci]` — que **não** dispara uma nova release.
+
+## Histórico de imagens
+
+Cada versão gera tags **imutáveis**, que nunca são reaproveitadas:
 
 ```text
-ghcr.io/<owner>/solidarity-api
-ghcr.io/<owner>/solidarity-worker
-ghcr.io/<owner>/solidarity-frontend
+ghcr.io/<owner>/solidarity-api:1.2.0        versão exata (imutável — é o histórico)
+ghcr.io/<owner>/solidarity-api:1.2          último patch da 1.2
+ghcr.io/<owner>/solidarity-api:1            último minor da 1.x
+ghcr.io/<owner>/solidarity-api:latest       versão mais recente
+ghcr.io/<owner>/solidarity-api:sha-<commit> rastreabilidade por commit
 ```
+
+As versões anteriores permanecem disponíveis indefinidamente no GHCR — é o que
+viabiliza o rollback. O mesmo vale para `solidarity-worker` e `solidarity-frontend`.
+
+## Alterando a versão manualmente
+
+Só é necessário em casos excepcionais (o CI faz isso sozinho):
+
+```bash
+./scripts/set-version.sh 2.0.0
+```
+
+O script mantém `VERSION`, `.env`, `frontend/package.json` e
+`k8s/kustomization.yaml` sincronizados — evita o Compose subir uma versão e o
+Kubernetes outra.
 
 ---
 
@@ -386,15 +430,11 @@ O Worker registra a versão no log de inicialização e o frontend a exibe no ro
 
 ## Versionamento no CI
 
-- Push na `main`: gera a versão `<VERSION>-build.<n>` (ex.: `1.0.0-build.7`), única por execução;
-- Tag `vX.Y.Z`: gera a versão semântica oficial (ex.: `1.2.0`), publicando também `1.2` e `latest`.
+Automático: cada push na `main` publica uma versão final, calculada a partir dos
+Conventional Commits. Veja a seção **CI/CD** acima.
 
-Publicar uma release:
-
-```bash
-git tag v1.1.0
-git push origin v1.1.0
-```
+Não é necessário criar tags manualmente — o pipeline cria a tag `vX.Y.Z`,
+a GitHub Release e atualiza o `CHANGELOG.md`.
 
 ## Rollback pelo GitHub Actions (artefato publicado)
 
