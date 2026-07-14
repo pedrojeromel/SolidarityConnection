@@ -18,7 +18,7 @@ public static class DbSeeder
             Id = Guid.NewGuid(),
             FullName = "NGO Manager",
             Email = "manager@solidarity.com",
-            Cpf = "00000000000",
+            Cpf = "52998224725",
             PasswordHash = BCrypt.Net.BCrypt.HashPassword("123456"), 
             Role = UserRole.NgoManager,
             CreatedAt = DateTime.UtcNow

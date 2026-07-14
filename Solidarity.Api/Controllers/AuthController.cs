@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Solidarity.Application.DTOs.Auth;
 using Solidarity.Domain.Entities;
 using Solidarity.Domain.Enums;
+using Solidarity.Domain.Validation;
 using Solidarity.Infrastructure.Data;
 
 [ApiController]
@@ -25,6 +26,9 @@ public class AuthController : ControllerBase
     public async Task<IActionResult> Register(
         RegisterRequest request)
     {
+        if (!CpfValidator.IsValid(request.Cpf))
+            return BadRequest("Invalid CPF.");
+
         if (await _context.Users
             .AnyAsync(x => x.Email == request.Email))
         {
@@ -36,7 +40,7 @@ public class AuthController : ControllerBase
             Id = Guid.NewGuid(),
             FullName = request.FullName,
             Email = request.Email,
-            Cpf = request.Cpf,
+            Cpf = CpfValidator.Normalize(request.Cpf),
             PasswordHash =
                 BCrypt.Net.BCrypt.HashPassword(
                     request.Password),

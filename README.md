@@ -319,10 +319,13 @@ Exemplo:
 {
   "fullName": "Teste",
   "email": "teste@fiap.com.br",
-  "cpf": "12345678901",
+  "cpf": "529.982.247-25",
   "password": "123456"
 }
 ```
+
+O CPF é validado (formato e dígitos verificadores) e aceito com ou sem máscara.
+CPFs inválidos retornam 400. O valor é armazenado apenas com dígitos.
 
 ### Login
 
