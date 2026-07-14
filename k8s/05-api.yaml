@@ -3,8 +3,22 @@ kind: Deployment
 metadata:
   name: solidarity-api
   namespace: solidarity
+  labels:
+    app: solidarity-api
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    # Aparece em `kubectl rollout history` e identifica cada revisao.
+    kubernetes.io/change-cause: "Deploy versao 1.0.0"
 spec:
-  replicas: 1
+  replicas: 2
+  # Guarda revisoes anteriores para permitir `kubectl rollout undo`.
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      # Sobe o pod novo antes de derrubar o antigo: deploy sem downtime.
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: solidarity-api
@@ -12,6 +26,7 @@ spec:
     metadata:
       labels:
         app: solidarity-api
+        app.kubernetes.io/version: "1.0.0"
     spec:
       initContainers:
         - name: wait-for-sqlserver
@@ -34,26 +49,46 @@ spec:
             - until nc -z rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done
       containers:
         - name: solidarity-api
-          image: solidarity-api:local
+          # Tag imutavel (definida em kustomization.yaml). Nunca usar :latest
+          # aqui: sem tag versionada, rollback nao tem para onde voltar.
+          image: solidarity-api:1.0.0
           imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 8080
+          env:
+            - name: APP_VERSION
+              value: "1.0.0"
           volumeMounts:
             - name: api-appsettings
               mountPath: /app/appsettings.json
               subPath: appsettings.json
+          # Probes no /health: se a versao nova subir quebrada, o rollout trava
+          # e o pod antigo continua atendendo (maxUnavailable: 0).
+          startupProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            failureThreshold: 30
+            periodSeconds: 5
           readinessProbe:
             httpGet:
-              path: /swagger/index.html
+              path: /health
               port: 8080
-            initialDelaySeconds: 20
+            initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /swagger/index.html
+              path: /health
               port: 8080
             initialDelaySeconds: 40
             periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 192Mi
+            limits:
+              cpu: 750m
+              memory: 640Mi
       volumes:
         - name: api-appsettings
           configMap:

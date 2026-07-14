@@ -246,6 +246,98 @@ http://localhost:3001   (container do frontend)
 
 ---
 
+# Versionamento e Rollback
+
+## Fonte única da versão
+
+O arquivo `VERSION` na raiz define a versão da plataforma. Ela é propagada para:
+
+```text
+VERSION  ─┬─> Directory.Build.props  -> assemblies .NET (API e Worker)
+          ├─> frontend/package.json  -> bundle do React
+          ├─> Dockerfile (APP_VERSION) -> label e binário da imagem
+          ├─> docker-compose (tag da imagem: solidarity-api:1.0.0)
+          └─> k8s/kustomization.yaml (newTag)
+```
+
+Nenhuma imagem da aplicação roda com tag mutável: cada versão gera uma imagem
+imutável própria. É isso que torna o rollback possível.
+
+## Conferindo a versão em execução
+
+```bash
+curl http://localhost:8080/version
+```
+
+```json
+{ "service": "Solidarity.Api", "version": "1.0.0", "environment": "Production" }
+```
+
+O Worker registra a versão no log de inicialização e o frontend a exibe no rodapé.
+
+## Versionamento no CI
+
+- Push na `main`: gera a versão `<VERSION>-build.<n>` (ex.: `1.0.0-build.7`), única por execução;
+- Tag `vX.Y.Z`: gera a versão semântica oficial (ex.: `1.2.0`), publicando também `1.2` e `latest`.
+
+Publicar uma release:
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+## Rollback com Docker Compose
+
+Cada versão fica disponível como imagem local/registro. Para voltar:
+
+```bash
+APP_VERSION=1.0.0 docker compose up -d --no-build api worker frontend
+```
+
+Confirme:
+
+```bash
+curl http://localhost:8080/version
+```
+
+## Rollback com Kubernetes
+
+Os Deployments usam `RollingUpdate` com `maxUnavailable: 0` — o pod novo só
+recebe tráfego após passar no probe `/health`. Se a versão nova subir quebrada,
+os pods antigos continuam atendendo.
+
+Histórico de revisões:
+
+```bash
+kubectl rollout history deployment/solidarity-api -n solidarity
+```
+
+Voltar para a revisão anterior:
+
+```bash
+kubectl rollout undo deployment/solidarity-api -n solidarity
+kubectl rollout undo deployment/solidarity-worker -n solidarity
+kubectl rollout undo deployment/solidarity-frontend -n solidarity
+```
+
+Voltar para uma revisão específica:
+
+```bash
+kubectl rollout undo deployment/solidarity-api -n solidarity --to-revision=2
+```
+
+Acompanhar o rollout:
+
+```bash
+kubectl rollout status deployment/solidarity-api -n solidarity
+```
+
+Alternativamente, altere `newTag` em `k8s/kustomization.yaml` para a versão
+desejada e reaplique com `kubectl apply -k k8s`.
+
+---
+
 # Executando com Kubernetes (Docker Desktop)
 
 ## Pré-requisitos

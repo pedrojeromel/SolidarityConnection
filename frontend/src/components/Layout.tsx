@@ -69,6 +69,10 @@ export function Layout() {
         <main className="mx-auto max-w-7xl px-6 py-12">
           <Outlet />
         </main>
+
+        <footer className="mx-auto max-w-7xl px-6 pb-8 text-xs text-slate-600">
+          Conexão Solidária · v{import.meta.env.VITE_APP_VERSION ?? '1.0.0'}
+        </footer>
       </div>
     </div>
   )

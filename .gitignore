@@ -20,3 +20,5 @@ docker-data/
 # OS
 Thumbs.db
 .DS_Store
+# Variaveis locais (use .env.example como referencia)
+.env

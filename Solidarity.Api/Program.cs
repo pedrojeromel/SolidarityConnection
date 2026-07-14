@@ -4,6 +4,7 @@ using Solidarity.Infrastructure.Data;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Solidarity.Api.Extensions;
+using Solidarity.Shared;
 using System.Text;
 using Prometheus;
 
@@ -58,5 +59,16 @@ app.UseAuthorization();
 app.MapControllers();
 app.MapMetrics("/metrics");
 app.MapHealthChecks("/health");
+
+// Permite conferir qual versao esta efetivamente no ar — essencial para
+// validar um deploy ou confirmar que um rollback surtiu efeito.
+app.MapGet("/version", () => Results.Ok(new
+{
+    service = "Solidarity.Api",
+    version = AppVersion.Current,
+    environment = app.Environment.EnvironmentName
+}))
+.AllowAnonymous()
+.WithTags("Diagnostics");
 app.Run();
 

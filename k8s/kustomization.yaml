@@ -1,5 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+
+namespace: solidarity
+
 resources:
   - 00-namespace.yaml
   - 01-persistent-volumes.yaml
@@ -15,3 +18,14 @@ resources:
   - 10-zabbix.yaml
   - 11-blackbox-exporter.yaml
   - 12-frontend.yaml
+
+# Ponto unico de controle da versao publicada no cluster.
+# Deploy de uma nova versao: altere newTag e rode `kubectl apply -k k8s`.
+# Rollback: volte newTag para a versao anterior (ou use `kubectl rollout undo`).
+images:
+  - name: solidarity-api
+    newTag: "1.0.0"
+  - name: solidarity-worker
+    newTag: "1.0.0"
+  - name: solidarity-frontend
+    newTag: "1.0.0"
