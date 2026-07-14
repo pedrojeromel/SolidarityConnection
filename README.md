@@ -61,6 +61,8 @@ flowchart LR
 - Docker
 - Docker Compose
 - Kubernetes
+- GitHub Actions (CI/CD)
+- xUnit + Moq (testes de unidade)
 
 ---
 
@@ -69,14 +71,20 @@ flowchart LR
 ```text
 SolidarityConnection
 
-├── Solidarity.Api
-├── Solidarity.Application
-├── Solidarity.Domain
-├── Solidarity.Infrastructure
-├── Solidarity.Shared
-├── Solidarity.Worker
-├── observability
-├── k8s
+├── Solidarity.Api             API REST (campanhas, doadores, doações)
+├── Solidarity.Application     DTOs e contratos (interfaces)
+├── Solidarity.Domain          Entidades, enums e regras de validação
+├── Solidarity.Infrastructure  EF Core, MongoDB, RabbitMQ, JWT
+├── Solidarity.Shared          Eventos e versão da aplicação
+├── Solidarity.Worker          Consumidor da fila de doações
+├── frontend                   Aplicação React (SPA)
+├── tests                      Testes de unidade (xUnit)
+│   ├── Solidarity.Domain.Tests
+│   └── Solidarity.Api.Tests
+├── observability              Prometheus, Grafana e Zabbix
+├── k8s                        Manifests do Kubernetes
+├── .github/workflows          Pipelines de CI e de rollback
+├── VERSION                    Fonte única da versão da plataforma
 └── docker-compose.yml
 ```
 
@@ -98,6 +106,60 @@ Responsável por realizar doações.
 Permissões:
 - Consultar campanhas;
 - Realizar doações;
+
+---
+
+# Regras de Negócio e Validações
+
+## Campanha (GestorONG)
+
+- Título, Descrição, Data de Início, Data de Término, Meta Financeira e Status;
+- A data de término não pode estar no passado;
+- A meta financeira deve ser maior que zero;
+- Status possíveis: `Ativa`, `Concluída` e `Cancelada`.
+
+## Cadastro de Doador (público)
+
+- E-mail único no banco (índice único);
+- **CPF validado**: formato e dígitos verificadores, aceito com ou sem máscara
+  (`529.982.247-25` ou `52998224725`); armazenado apenas com dígitos;
+- **Senha com política mínima**, validada no domínio (`PasswordPolicy`):
+  - mínimo de 8 caracteres;
+  - ao menos uma letra;
+  - ao menos um número;
+  - ao menos um caractere especial.
+- Senha armazenada com hash **BCrypt**;
+- A API retorna 400 informando exatamente qual requisito não foi atendido.
+
+## Doação (Doador logado)
+
+- Exclusiva do perfil `Donor` (o gestor não doa);
+- Não é permitida em campanhas canceladas ou concluídas;
+- A API **não** atualiza o valor arrecadado: publica um evento e responde `202 Accepted`.
+
+---
+
+# Testes de Unidade
+
+Suíte com **58 testes** (xUnit, padrão AAA, mocks com Moq).
+
+```bash
+dotnet test SolidarityConnection.slnx
+```
+
+Cobertura:
+
+```text
+tests/Solidarity.Domain.Tests   Validação de CPF e política de senha
+tests/Solidarity.Api.Tests      Autenticação, campanhas e doações
+```
+
+Destaque: o teste `Create_WhenCampaignIsActive_DoesNotUpdateTotalRaisedDirectly`
+garante o requisito arquitetural de que a API **não** atualiza o valor arrecadado —
+quem faz isso é o Worker, ao consumir a fila.
+
+Os testes rodam automaticamente na esteira de CI: se algum falhar, as imagens
+Docker não são publicadas.
 
 ---
 
@@ -169,6 +231,7 @@ solidarity-zabbix-init
 Frontend (React): http://localhost:3001
 API/Swagger:      http://localhost:8080/swagger
 Health:           http://localhost:8080/health
+Versão:           http://localhost:8080/version
 Métricas da API:  http://localhost:8080/metrics
 RabbitMQ UI:      http://localhost:15672
 Prometheus:       http://localhost:9090
@@ -223,10 +286,20 @@ VITE_API_URL=http://localhost:8080
 
 ## Telas
 
-- `/` — Painel de Transparência (público): campanhas ativas, meta e valor arrecadado;
-- `/cadastro` — cadastro de doador (com máscara e validação de CPF);
+- `/` — Painel de Transparência (público): campanhas ativas, meta e valor arrecadado.
+  O botão **Doar agora** aparece para doadores autenticados;
+- `/cadastro` — cadastro de doador: máscara de CPF, requisitos de senha exibidos
+  em tempo real e confirmação de senha;
 - `/login` — autenticação (JWT);
-- `/gestor` — gestão de campanhas (restrito à role NgoManager).
+- `/gestor` — gestão de campanhas (restrito à role NgoManager): criar, editar e cancelar.
+
+## Detalhes de usabilidade
+
+- Campos de valor (doação e meta financeira) usam **máscara monetária pt-BR**:
+  digite apenas números e o campo formata automaticamente (`150000` → `1.500,00`);
+- O campo de senha mostra os requisitos abaixo dele, marcados conforme são atendidos;
+- A doação é restrita ao perfil `Donor`. Gestores veem um aviso explicando isso,
+  e visitantes veem o botão **Entrar para doar**.
 
 ## Demonstração do fluxo assíncrono
 
@@ -242,6 +315,32 @@ A API libera as origens do frontend em `Cors:AllowedOrigins` (`appsettings.json`
 ```text
 http://localhost:5173   (Vite em modo dev)
 http://localhost:3001   (container do frontend)
+```
+
+---
+
+# CI/CD (GitHub Actions)
+
+Pipeline em `.github/workflows/ci.yml`, disparado a cada push na `main`,
+em pull requests e por tags `v*`.
+
+```text
+version  ──>  build (.NET)  ──>  docker (api | worker | frontend)
+resolve       restore              build da imagem
+a versão      build                push para o GHCR
+              test (58)            tags: versão, sha e latest
+```
+
+- O job `build` compila a solution e roda os testes;
+- O job `docker` só executa se o `build` passar — **imagem quebrada não é publicada**;
+- Em pull request as imagens são construídas, mas não publicadas.
+
+Imagens publicadas no GitHub Container Registry:
+
+```text
+ghcr.io/<owner>/solidarity-api
+ghcr.io/<owner>/solidarity-worker
+ghcr.io/<owner>/solidarity-frontend
 ```
 
 ---
@@ -286,6 +385,23 @@ Publicar uma release:
 git tag v1.1.0
 git push origin v1.1.0
 ```
+
+## Rollback pelo GitHub Actions (artefato publicado)
+
+Workflow `.github/workflows/rollback.yml`, acionado manualmente
+(**Actions → Rollback → Run workflow**), informando a versão de destino
+(ex.: `1.0.0-build.12`).
+
+O que ele faz:
+
+1. Verifica se a versão informada existe no GHCR (aborta se não existir);
+2. Reaponta a tag `latest` das três imagens para essa versão, de forma sequencial,
+   evitando que os serviços fiquem em versões diferentes entre si.
+
+> **Importante:** este workflow reverte o **artefato publicado**, não o ambiente em
+> execução. Como a aplicação roda localmente (Docker Desktop / Kubernetes local), o
+> GitHub não tem acesso ao cluster — o rollback do ambiente é feito na máquina,
+> conforme as duas seções abaixo.
 
 ## Rollback com Docker Compose
 
@@ -358,14 +474,23 @@ Contexto esperado no Docker Desktop:
 docker-desktop
 ```
 
-## 1) Gerar imagens locais da API e Worker
+## 1) Gerar as imagens locais
+
+As imagens são versionadas: a tag deve ser a mesma definida no arquivo `VERSION`
+e em `k8s/kustomization.yaml` (hoje, `1.0.0`).
 
 Na raiz do projeto:
 
 ```bash
-docker build -t solidarity-api:local -f Solidarity.Api/Dockerfile .
-docker build -t solidarity-worker:local -f Solidarity.Worker/Dockerfile .
-docker build -t solidarity-frontend:local ./frontend
+docker build -t solidarity-api:1.0.0 --build-arg APP_VERSION=1.0.0 -f Solidarity.Api/Dockerfile .
+docker build -t solidarity-worker:1.0.0 --build-arg APP_VERSION=1.0.0 -f Solidarity.Worker/Dockerfile .
+docker build -t solidarity-frontend:1.0.0 --build-arg APP_VERSION=1.0.0 ./frontend
+```
+
+Alternativamente, o Compose já constrói as imagens com as tags corretas:
+
+```bash
+docker compose build
 ```
 
 ## 2) Aplicar manifests Kubernetes
@@ -477,12 +602,21 @@ Exemplo:
   "fullName": "Teste",
   "email": "teste@fiap.com.br",
   "cpf": "529.982.247-25",
-  "password": "123456"
+  "password": "Solidaria@2026"
 }
 ```
 
 O CPF é validado (formato e dígitos verificadores) e aceito com ou sem máscara.
 CPFs inválidos retornam 400. O valor é armazenado apenas com dígitos.
+
+A senha deve atender à política mínima (8+ caracteres, letra, número e caractere
+especial). Senhas fracas retornam 400 informando o que falta. Exemplo:
+
+```text
+"A senha deve conter ao menos um caractere especial."
+```
+
+CPFs válidos para teste: `529.982.247-25` e `111.444.777-35`.
 
 ### Login
 
@@ -664,35 +798,48 @@ DonationReceivedEvent
 
 ---
 
-# Teste Completo
+# Teste Completo (ponta a ponta)
 
-## Passo 1
+Pode ser feito pelo frontend (http://localhost:3001) ou pelo Swagger.
 
-Login como gestor.
+## 1) Login como gestor
 
-## Passo 2
+```text
+manager@solidarity.com / 123456
+```
 
-Criar campanha.
+## 2) Criar uma campanha
 
-## Passo 3
+Meta maior que zero e data de término no futuro.
+Tente também uma data no passado ou meta zero: a API deve rejeitar com 400.
 
-Registrar novo doador.
+## 3) Cadastrar um doador
 
-## Passo 4
+```text
+CPF:   529.982.247-25
+Senha: Solidaria@2026
+```
 
-Login com doador.
+Tente um CPF inválido (`111.111.111-11`) e uma senha fraca (`123456`):
+ambos devem ser rejeitados com 400.
 
-## Passo 5
+## 4) Login com o doador e realizar a doação
 
-Realizar doação.
+No frontend, o botão **Doar agora** aparece somente para o perfil doador.
 
-## Passo 6
+## 5) Comprovar o processamento assíncrono
 
-Verificar:
+- A API responde **202 Accepted** (a doação virou um evento na fila);
+- No RabbitMQ (http://localhost:15672), a mensagem passa pela fila `donation-received`;
+- O Worker consome o evento e atualiza o `TotalRaised`;
+- O painel público (`GET /api/campaigns/active`) passa a exibir o novo valor —
+  no frontend, a barra de progresso sobe sozinha.
 
-- MongoDB recebeu a doação;
-- RabbitMQ processou a fila;
-- Worker atualizou o TotalRaised;
+## 6) Conferir a versão em execução
+
+```bash
+curl http://localhost:8080/version
+```
 
 ---
 
