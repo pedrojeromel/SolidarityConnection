@@ -12,6 +12,40 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [2.0.0] — 2026-07-15
+
+### Adicionado
+
+- microsservico de pagamento com checkout de cartao
+- worker dedicado de envio de e-mail via mensageria
+- painel da home com dados reais do banco (remove numeros mock)
+- redesign completo no estilo produto SaaS (direcao C)
+- passa a rodar as imagens publicadas no GHCR, sem build local
+- script de deploy com validacao de versao e modo GHCR
+- versionamento semantico automatico a cada push na main
+
+### Corrigido
+
+- efeito devolvia valor e o React o chamava como funcao de limpeza
+- publica sourcemap e corrige clearTimeout desacoplado
+- exibe erro em vez de tela preta e trata rota desconhecida
+- corrige cache do frontend no nginx e commit de release no CI
+- protege intervalo vazio na geracao das notas da release
+
+### Documentação
+
+- atualiza arquitetura e acessos com payment-service e e-mail
+- consolida a secao 1.1.0 do changelog
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:2.0.0
+ghcr.io/pedrojeromel/solidarity-worker:2.0.0
+ghcr.io/pedrojeromel/solidarity-frontend:2.0.0
+```
+---
+
 ## [1.7.1] — 2026-07-15
 
 ### Imagens publicadas
