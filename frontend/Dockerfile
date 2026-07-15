@@ -10,9 +10,11 @@ COPY . .
 
 # Vite inlina as variaveis VITE_* no bundle em tempo de build.
 ARG VITE_API_URL=http://localhost:8080
+ARG VITE_PAYMENT_URL=http://localhost:8090
 ARG APP_VERSION=1.0.0
 
 ENV VITE_API_URL=$VITE_API_URL
+ENV VITE_PAYMENT_URL=$VITE_PAYMENT_URL
 ENV VITE_APP_VERSION=$APP_VERSION
 
 RUN npm run build

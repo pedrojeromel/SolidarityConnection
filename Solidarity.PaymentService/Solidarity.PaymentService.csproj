@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>net10.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="10.0.9" />
+    <PackageReference Include="Swashbuckle.AspNetCore" Version="6.6.2" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Solidarity.Application\Solidarity.Application.csproj" />
+    <ProjectReference Include="..\Solidarity.Infrastructure\Solidarity.Infrastructure.csproj" />
+    <ProjectReference Include="..\Solidarity.Shared\Solidarity.Shared.csproj" />
+  </ItemGroup>
+
+</Project>

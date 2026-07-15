@@ -18,6 +18,9 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   body?: unknown
   auth?: boolean
+  // Permite apontar para outro microsserviço (ex.: pagamentos), mantendo o
+  // mesmo tratamento de token e de erro.
+  baseUrl?: string
 }
 
 /**
@@ -26,7 +29,7 @@ interface RequestOptions {
  */
 export async function request<T>(
   path: string,
-  { method = 'GET', body, auth = false }: RequestOptions = {},
+  { method = 'GET', body, auth = false, baseUrl = BASE_URL }: RequestOptions = {},
 ): Promise<T> {
   const headers: Record<string, string> = {}
 
@@ -42,7 +45,7 @@ export async function request<T>(
     }
   }
 
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const response = await fetch(`${baseUrl}${path}`, {
     method,
     headers,
     body: body === undefined ? undefined : JSON.stringify(body),

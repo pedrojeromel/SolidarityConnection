@@ -80,6 +80,28 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Microsservico de pagamento: recebe os dados do cartao, autoriza (gateway
+  # simulado) e, se aprovado, registra a doacao e publica nas filas existentes.
+  payment-service:
+    image: ghcr.io/pedrojeromel/solidarity-payment-service:${APP_VERSION:-latest}
+    container_name: solidarity-payment-service
+    ports:
+      - "8090:8080"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -fsS http://localhost:8080/health || exit 1"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    depends_on:
+      sqlserver:
+        condition: service_healthy
+      mongodb:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
   # Worker dedicado exclusivamente ao envio de e-mail (como uma function).
   # Consome as filas de e-mail e dispara via SMTP. Localmente envia para o
   # Mailpit; em producao, as credenciais vem de variaveis de ambiente.
