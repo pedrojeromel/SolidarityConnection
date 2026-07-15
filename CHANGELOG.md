@@ -12,6 +12,21 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [1.4.0] — 2026-07-15
+
+### Adicionado
+
+- redesign completo no estilo produto SaaS (direcao C)
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:1.4.0
+ghcr.io/pedrojeromel/solidarity-worker:1.4.0
+ghcr.io/pedrojeromel/solidarity-frontend:1.4.0
+```
+---
+
 ## [1.3.0] — 2026-07-14
 
 ### Adicionado
