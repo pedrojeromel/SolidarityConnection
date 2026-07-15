@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Solidarity.Api.Tests.Builders;
 using Solidarity.Api.Tests.Infrastructure;
@@ -14,16 +15,20 @@ public class AuthControllerTests : IDisposable
 {
     private readonly AppDbContext _context;
     private readonly Mock<IJwtTokenService> _jwt;
+    private readonly Mock<IMessagePublisher> _publisher;
     private readonly AuthController _controller;
 
     public AuthControllerTests()
     {
         _context = TestDbContextFactory.Create();
         _jwt = new Mock<IJwtTokenService>();
+        _publisher = new Mock<IMessagePublisher>();
 
         _controller = new AuthController(
             _context,
-            _jwt.Object);
+            _jwt.Object,
+            _publisher.Object,
+            NullLogger<AuthController>.Instance);
     }
 
     [Theory]
@@ -99,6 +104,30 @@ public class AuthControllerTests : IDisposable
         var user = await _context.Users.SingleAsync();
 
         Assert.Equal("52998224725", user.Cpf);
+    }
+
+    [Fact]
+    public async Task Register_WhenSuccessful_PublishesWelcomeEmailEvent()
+    {
+        // Arrange
+        var request = new RegisterRequest
+        {
+            FullName = "Doador Teste",
+            Email = "doador@solidarity.com",
+            Cpf = "52998224725",
+            Password = "Solidaria@2026"
+        };
+
+        // Act
+        await _controller.Register(request);
+
+        // Assert
+        _publisher.Verify(
+            x => x.PublishAsync(
+                It.Is<Solidarity.Shared.Events.UserRegisteredEvent>(e =>
+                    e.Email == "doador@solidarity.com"),
+                Solidarity.Shared.Messaging.Queues.EmailUserRegistered),
+            Times.Once);
     }
 
     [Fact]

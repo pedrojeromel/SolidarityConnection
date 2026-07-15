@@ -6,6 +6,8 @@ using Solidarity.Domain.Entities;
 using Solidarity.Domain.Enums;
 using Solidarity.Domain.Validation;
 using Solidarity.Infrastructure.Data;
+using Solidarity.Shared.Events;
+using Solidarity.Shared.Messaging;
 
 [ApiController]
 [Route("api/auth")]
@@ -13,13 +15,19 @@ public class AuthController : ControllerBase
 {
     private readonly AppDbContext _context;
     private readonly IJwtTokenService _jwt;
+    private readonly IMessagePublisher _publisher;
+    private readonly ILogger<AuthController> _logger;
 
     public AuthController(
         AppDbContext context,
-        IJwtTokenService jwt)
+        IJwtTokenService jwt,
+        IMessagePublisher publisher,
+        ILogger<AuthController> logger)
     {
         _context = context;
         _jwt = jwt;
+        _publisher = publisher;
+        _logger = logger;
     }
 
     [HttpPost("register")]
@@ -58,6 +66,26 @@ public class AuthController : ControllerBase
         _context.Users.Add(user);
 
         await _context.SaveChangesAsync();
+
+        // O e-mail é um efeito colateral: uma falha ao publicar não deve
+        // impedir o cadastro, que já está persistido.
+        try
+        {
+            await _publisher.PublishAsync(
+                new UserRegisteredEvent
+                {
+                    FullName = user.FullName,
+                    Email = user.Email
+                },
+                Queues.EmailUserRegistered);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(
+                ex,
+                "Falha ao publicar e-mail de boas-vindas para {Email}.",
+                user.Email);
+        }
 
         return Ok();
     }

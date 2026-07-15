@@ -5,6 +5,7 @@ using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 using Solidarity.Infrastructure.Data;
 using Solidarity.Shared.Events;
+using Solidarity.Shared.Messaging;
 
 namespace Solidarity.Worker;
 
@@ -37,7 +38,7 @@ public class Worker : BackgroundService
                 cancellationToken: stoppingToken);
 
         await channel.QueueDeclareAsync(
-            queue: "donation-received",
+            queue: Queues.DonationReceived,
             durable: true,
             exclusive: false,
             autoDelete: false,
@@ -89,7 +90,7 @@ public class Worker : BackgroundService
         };
 
         await channel.BasicConsumeAsync(
-            queue: "donation-received",
+            queue: Queues.DonationReceived,
             autoAck: false,
             consumer: consumer,
             cancellationToken: stoppingToken);
