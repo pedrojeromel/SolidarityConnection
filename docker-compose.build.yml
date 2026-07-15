@@ -26,6 +26,14 @@ services:
         APP_VERSION: ${APP_VERSION:-dev}
     image: ghcr.io/pedrojeromel/solidarity-worker:${APP_VERSION:-dev}
 
+  email-worker:
+    build:
+      context: .
+      dockerfile: Solidarity.EmailWorker/Dockerfile
+      args:
+        APP_VERSION: ${APP_VERSION:-dev}
+    image: ghcr.io/pedrojeromel/solidarity-email-worker:${APP_VERSION:-dev}
+
   frontend:
     build:
       context: ./frontend

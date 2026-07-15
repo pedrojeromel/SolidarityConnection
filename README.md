@@ -76,11 +76,13 @@ SolidarityConnection
 ├── Solidarity.Domain          Entidades, enums e regras de validação
 ├── Solidarity.Infrastructure  EF Core, MongoDB, RabbitMQ, JWT
 ├── Solidarity.Shared          Eventos e versão da aplicação
-├── Solidarity.Worker          Consumidor da fila de doações
+├── Solidarity.Worker          Consumidor da fila de doações (atualiza o total)
+├── Solidarity.EmailWorker     Envio de e-mail (function dedicada)
 ├── frontend                   Aplicação React (SPA)
 ├── tests                      Testes de unidade (xUnit)
 │   ├── Solidarity.Domain.Tests
-│   └── Solidarity.Api.Tests
+│   ├── Solidarity.Api.Tests
+│   └── Solidarity.EmailWorker.Tests
 ├── observability              Prometheus, Grafana e Zabbix
 ├── k8s                        Manifests do Kubernetes
 ├── .github/workflows          Pipelines de CI e de rollback
@@ -448,6 +450,70 @@ Só é necessário em casos excepcionais (o CI faz isso sozinho):
 O script mantém `VERSION`, `.env`, `frontend/package.json` e
 `k8s/kustomization.yaml` sincronizados — evita o Compose subir uma versão e o
 Kubernetes outra.
+
+---
+
+# E-mail / SMTP
+
+Um worker dedicado (`Solidarity.EmailWorker`) cuida **apenas** do envio de
+e-mail — como uma function. Ele não acessa banco de dados: consome eventos das
+filas de e-mail e dispara a mensagem via SMTP.
+
+## Fluxo
+
+```text
+Cadastro   -> API publica UserRegisteredEvent   -> fila email.user-registered
+Doação     -> API publica DonationConfirmedEvent -> fila email.donation-confirmed
+                                                        |
+                                                        v
+                                          Solidarity.EmailWorker -> SMTP
+```
+
+Dois e-mails são enviados:
+
+- **Boas-vindas**, ao concluir o cadastro;
+- **Confirmação da doação**, ao registrar uma doação.
+
+Ambos seguem o visual do sistema (tema escuro, acento índigo), são enviados em
+`multipart/alternative` (texto puro + HTML) e **não contêm links** — decisões
+que melhoram a entregabilidade e reduzem a chance de cair em spam.
+
+## Testando localmente (Mailpit)
+
+O ambiente sobe com o **Mailpit**, um servidor SMTP de teste que captura os
+e-mails sem entregá-los a caixas reais. Após um cadastro ou doação, veja as
+mensagens em:
+
+```text
+http://localhost:8025
+```
+
+Nenhuma credencial é necessária nesse modo.
+
+## Configurando um SMTP real (produção)
+
+As credenciais do remetente **não ficam no código**. Guarde-as nos
+**Secrets do GitHub** (fonte segura) e injete-as no ambiente na hora do deploy.
+
+Secrets sugeridos (Settings → Secrets and variables → Actions):
+
+```text
+SMTP_HOST        SMTP_USERNAME
+SMTP_PORT        SMTP_PASSWORD
+SMTP_FROMEMAIL   SMTP_FROMNAME
+```
+
+O worker lê essas informações de variáveis de ambiente
+(`Smtp__Host`, `Smtp__Username`, `Smtp__Password`, …):
+
+- **Docker Compose:** defina os valores no arquivo `.env` (ignorado pelo git;
+  use `.env.example` como referência);
+- **Kubernetes:** aplique o Secret `solidarity-smtp` a partir de
+  `k8s/13-email-secret.example.yaml` e descomente o bloco `envFrom` em
+  `k8s/13-email.yaml`.
+
+> As credenciais reais nunca são commitadas: o `.env` e o Secret preenchido
+> ficam fora do versionamento.
 
 ---
 
