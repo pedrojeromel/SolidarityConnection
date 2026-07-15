@@ -13,13 +13,34 @@ O sistema permite o gerenciamento de campanhas beneficentes, cadastro de doadore
 ```mermaid
 flowchart LR
     U[Usuário] --> FRONT[Frontend React<br/>:3001]
-    FRONT --> API[Solidarity.Api]
+
+    FRONT -->|cadastro / campanhas| API[Solidarity.Api<br/>:8080]
+    FRONT -->|checkout do cartão| PAY[Solidarity.PaymentService<br/>:8090]
+
     API --> SQL[(SQL Server<br/>Users/Campaigns)]
     API --> MONGO[(MongoDB<br/>Donations)]
-    API --> MQ[(RabbitMQ<br/>donation-received)]
-    MQ --> WORKER[Solidarity.Worker]
-    WORKER --> SQL
+
+    PAY -->|valida campanha| SQL
+    PAY -->|grava doação| MONGO
+
+    API -->|user-registered| MQ[(RabbitMQ)]
+    API -->|donation-confirmed| MQ
+    PAY -->|donation-received| MQ
+    PAY -->|donation-confirmed| MQ
+
+    MQ -->|donation-received| WORKER[Solidarity.Worker]
+    WORKER -->|atualiza total| SQL
+
+    MQ -->|email.*| EMAIL[Solidarity.EmailWorker]
+    EMAIL -->|SMTP| MAIL[Mailpit / SMTP<br/>:8025]
 ```
+
+Fluxo de uma doação com pagamento: o front abre o checkout, o **PaymentService**
+autoriza o cartão e, se aprovado, publica dois eventos — `donation-received`
+(o **Worker** soma no total da campanha) e `donation-confirmed` (o
+**EmailWorker** envia o comprovante). O cadastro de doador dispara
+`user-registered` (e-mail de boas-vindas). Nenhuma dessas etapas é síncrona: a
+resposta do pagamento volta na hora, os efeitos correm pelas filas.
 
 ## Fluxo de observabilidade e monitoramento
 
@@ -284,15 +305,17 @@ solidarity-zabbix-init
 ## 3) Acessos no Docker Compose
 
 ```text
-Frontend (React): http://localhost:3001
-API/Swagger:      http://localhost:8080/swagger
-Health:           http://localhost:8080/health
-Versão:           http://localhost:8080/version
-Métricas da API:  http://localhost:8080/metrics
-RabbitMQ UI:      http://localhost:15672
-Prometheus:       http://localhost:9090
-Grafana:          http://localhost:3000
-Zabbix Web:       http://localhost:8082
+Frontend (React):  http://localhost:3001
+API/Swagger:       http://localhost:8080/swagger
+Health:            http://localhost:8080/health
+Versão:            http://localhost:8080/version
+Métricas da API:   http://localhost:8080/metrics
+Payment Service:   http://localhost:8090/swagger
+Mailpit (e-mails): http://localhost:8025
+RabbitMQ UI:       http://localhost:15672
+Prometheus:        http://localhost:9090
+Grafana:           http://localhost:3000
+Zabbix Web:        http://localhost:8082
 ```
 
 Credenciais padrão:
@@ -725,6 +748,7 @@ No Kubernetes, execute os port-forwards abaixo (cada comando em um terminal sepa
 
 ```bash
 kubectl port-forward -n solidarity svc/solidarity-api 8080:8080
+kubectl port-forward -n solidarity svc/solidarity-payment-service 8090:8080
 kubectl port-forward -n solidarity svc/solidarity-frontend 3001:80
 kubectl port-forward -n solidarity svc/rabbitmq 15672:15672
 kubectl port-forward -n solidarity svc/prometheus 9090:9090
