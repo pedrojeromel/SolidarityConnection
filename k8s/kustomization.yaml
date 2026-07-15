@@ -19,6 +19,7 @@ resources:
   - 11-blackbox-exporter.yaml
   - 12-frontend.yaml
   - 13-email.yaml
+  - 14-payment.yaml
 
 # Ponto unico de controle da versao publicada no cluster.
 # As imagens vem do GHCR (publicadas pelo CI): ninguem precisa compilar nada.
@@ -34,6 +35,9 @@ images:
     newTag: "1.6.0"
   - name: solidarity-email-worker
     newName: ghcr.io/pedrojeromel/solidarity-email-worker
+    newTag: "1.6.0"
+  - name: solidarity-payment-service
+    newName: ghcr.io/pedrojeromel/solidarity-payment-service
     newTag: "1.6.0"
   - name: solidarity-frontend
     newName: ghcr.io/pedrojeromel/solidarity-frontend

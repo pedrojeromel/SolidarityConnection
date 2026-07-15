@@ -78,11 +78,13 @@ SolidarityConnection
 ├── Solidarity.Shared          Eventos e versão da aplicação
 ├── Solidarity.Worker          Consumidor da fila de doações (atualiza o total)
 ├── Solidarity.EmailWorker     Envio de e-mail (function dedicada)
+├── Solidarity.PaymentService  Processamento de pagamento (checkout)
 ├── frontend                   Aplicação React (SPA)
 ├── tests                      Testes de unidade (xUnit)
 │   ├── Solidarity.Domain.Tests
 │   ├── Solidarity.Api.Tests
-│   └── Solidarity.EmailWorker.Tests
+│   ├── Solidarity.EmailWorker.Tests
+│   └── Solidarity.PaymentService.Tests
 ├── observability              Prometheus, Grafana e Zabbix
 ├── k8s                        Manifests do Kubernetes
 ├── .github/workflows          Pipelines de CI e de rollback
@@ -450,6 +452,51 @@ Só é necessário em casos excepcionais (o CI faz isso sozinho):
 O script mantém `VERSION`, `.env`, `frontend/package.json` e
 `k8s/kustomization.yaml` sincronizados — evita o Compose subir uma versão e o
 Kubernetes outra.
+
+---
+
+# Pagamento (checkout)
+
+A doação passa por um **checkout com cartão** antes de ser registrada. O
+processamento fica em um microsserviço dedicado (`Solidarity.PaymentService`).
+
+## Fluxo
+
+```text
+Doador clica "Doar" -> modal de pagamento seguro (cartão + endereço, mín. R$ 5)
+   cancelar ─────────────────────────────► fecha
+   pagar
+      ▼
+   PaymentService: valida valor e campanha, autoriza o cartão (gateway simulado)
+      ├─ recusado  -> 402 -> modal mostra o motivo
+      └─ aprovado  -> registra a doação (Mongo)
+                      publica donation-received  (worker atualiza o total)
+                      publica donation-confirmed (e-mail de comprovante)
+                      -> 200 -> modal mostra "aprovado" -> painel recarrega
+```
+
+O resultado do pagamento é **síncrono** (a modal aguarda). Os efeitos
+(e-mail e atualização do total) reaproveitam as filas já existentes.
+
+## Cartão de teste
+
+É um **gateway simulado** — nenhuma cobrança real acontece e **dados de cartão
+nunca são armazenados nem registrados em log**.
+
+```text
+Aprova:   4242 4242 4242 4242   (qualquer validade futura e CVV de 3 dígitos)
+Recusa:   qualquer outro número
+Mínimo:   R$ 5,00
+```
+
+O número do cartão de teste é configurável em `Payment:TestCardNumber`.
+
+## Acesso
+
+```text
+Payment API:  http://localhost:8090/swagger
+Health:       http://localhost:8090/health
+```
 
 ---
 

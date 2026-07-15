@@ -11,9 +11,11 @@
   <Project Path="Solidarity.Shared/Solidarity.Shared.csproj" />
   <Project Path="Solidarity.Worker/Solidarity.Worker.csproj" />
   <Project Path="Solidarity.EmailWorker/Solidarity.EmailWorker.csproj" />
+  <Project Path="Solidarity.PaymentService/Solidarity.PaymentService.csproj" />
   <Folder Name="/tests/">
     <Project Path="tests/Solidarity.Api.Tests/Solidarity.Api.Tests.csproj" />
     <Project Path="tests/Solidarity.Domain.Tests/Solidarity.Domain.Tests.csproj" />
     <Project Path="tests/Solidarity.EmailWorker.Tests/Solidarity.EmailWorker.Tests.csproj" />
+    <Project Path="tests/Solidarity.PaymentService.Tests/Solidarity.PaymentService.Tests.csproj" />
   </Folder>
 </Solution>

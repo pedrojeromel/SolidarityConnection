@@ -1,12 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { campaignService } from '../services/campaign.service'
-import { donationService } from '../services/donation.service'
 import { useAuth } from '../hooks/useAuth'
 import { CampaignCard } from '../components/CampaignCard'
-import { Alert, Badge, Button, Card, Field } from '../components/ui'
-import { ApiError } from '../services/http'
-import { maskMoney, parseMoney } from '../utils/masks'
+import { CheckoutModal } from '../components/CheckoutModal'
+import { Alert, Badge, Button, Card } from '../components/ui'
 import type { ActiveCampaign } from '../types'
 
 /**
@@ -25,9 +23,7 @@ export function TransparencyPanel() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
 
-  const [selectedId, setSelectedId] = useState<string | null>(null)
-  const [amount, setAmount] = useState('')
-  const [donating, setDonating] = useState(false)
+  const [checkout, setCheckout] = useState<ActiveCampaign | null>(null)
   const [feedback, setFeedback] = useState('')
   const [pendingIds, setPendingIds] = useState<string[]>([])
 
@@ -77,36 +73,11 @@ export function TransparencyPanel() {
     [load],
   )
 
-  async function donate(campaignId: string) {
-    const value = parseMoney(amount)
-
-    if (value <= 0) {
-      setFeedback('Informe um valor maior que zero.')
-      return
-    }
-
-    setDonating(true)
-    setFeedback('')
-
-    try {
-      await donationService.donate(campaignId, value)
-
-      setSelectedId(null)
-      setAmount('')
-      setFeedback(
-        'Doação recebida! Estamos confirmando o pagamento — o valor aparece na barra em instantes.',
-      )
-
-      watchWorker(campaignId)
-    } catch (err) {
-      setFeedback(
-        err instanceof ApiError
-          ? err.message
-          : 'Não foi possível registrar a doação.',
-      )
-    } finally {
-      setDonating(false)
-    }
+  function onApproved(campaignId: string) {
+    setFeedback(
+      'Pagamento aprovado! O valor aparece na barra da campanha em instantes.',
+    )
+    watchWorker(campaignId)
   }
 
   return (
@@ -128,7 +99,7 @@ export function TransparencyPanel() {
 
       {feedback && (
         <Alert
-          kind={feedback.startsWith('Doação') ? 'success' : 'error'}
+          kind={feedback.startsWith('Pagamento aprovado') ? 'success' : 'error'}
           message={feedback}
         />
       )}
@@ -149,8 +120,8 @@ export function TransparencyPanel() {
               campaign={campaign}
               pending={pendingIds.includes(campaign.id)}
             >
-              {isDonor && selectedId !== campaign.id && (
-                <Button variant="brand" onClick={() => setSelectedId(campaign.id)}>
+              {isDonor && (
+                <Button variant="brand" onClick={() => setCheckout(campaign)}>
                   Doar agora
                 </Button>
               )}
@@ -170,41 +141,17 @@ export function TransparencyPanel() {
                   <strong className="text-fg">doador</strong>.
                 </p>
               )}
-
-              {isDonor && selectedId === campaign.id && (
-                <div className="space-y-3 border-t border-line pt-4">
-                  <Field
-                    id={`amount-${campaign.id}`}
-                    label="Valor da doação (R$)"
-                    inputMode="numeric"
-                    placeholder="0,00"
-                    value={amount}
-                    autoFocus
-                    onChange={(e) => setAmount(maskMoney(e.target.value))}
-                  />
-
-                  <div className="flex gap-2">
-                    <Button
-                      variant="brand"
-                      loading={donating}
-                      onClick={() => void donate(campaign.id)}
-                      className="flex-1"
-                    >
-                      Confirmar
-                    </Button>
-
-                    <Button
-                      variant="ghost"
-                      onClick={() => setSelectedId(null)}
-                    >
-                      Cancelar
-                    </Button>
-                  </div>
-                </div>
-              )}
             </CampaignCard>
           ))}
         </div>
+      )}
+
+      {checkout && (
+        <CheckoutModal
+          campaign={checkout}
+          onClose={() => setCheckout(null)}
+          onApproved={onApproved}
+        />
       )}
     </section>
   )
