@@ -2,81 +2,39 @@ import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { campaignService } from '../services/campaign.service'
 import { CampaignCard } from '../components/CampaignCard'
-import { HeroArt, Icon } from '../components/Illustrations'
-import { Button, Card, currency } from '../components/ui'
+import { Badge, Button, Card, currency } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
 import type { ActiveCampaign } from '../types'
 
-/**
- * Conteudo institucional. Os numeros de atuacao historica sao ilustrativos;
- * os indicadores de campanha vem da API (dados reais da plataforma).
- */
-const FOUNDED_YEAR = 2015
-
-const PILLARS = [
+const FEATURES = [
   {
-    icon: 'heart',
-    title: 'Acolhimento',
-    text: 'Abrigo, alimentação e apoio psicológico para crianças em situação de vulnerabilidade.',
+    title: 'Eventos imutáveis',
+    text: 'Cada doação vira um evento registrado que nunca é sobrescrito — existe uma única versão da verdade.',
+    path: 'M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z',
   },
   {
-    icon: 'sparkles',
-    title: 'Educação',
-    text: 'Reforço escolar, oficinas culturais e cursos de tecnologia para adolescentes.',
+    title: 'Painel em tempo real',
+    text: 'O valor arrecadado é atualizado automaticamente assim que o pagamento é confirmado.',
+    path: 'M4 20h16v2H2V2h2v18Zm4-2H6v-6h2v6Zm4 0h-2V8h2v10Zm4 0h-2v-8h2v8Z',
   },
   {
-    icon: 'shield',
-    title: 'Transparência',
-    text: 'Cada doação é registrada e o valor arrecadado é publicado em tempo real.',
-  },
-]
-
-const STEPS = [
-  {
-    title: 'Escolha uma campanha',
-    text: 'Veja as campanhas ativas, a meta de cada uma e quanto já foi arrecadado.',
-  },
-  {
-    title: 'Faça sua doação',
-    text: 'Cadastre-se em menos de um minuto e contribua com o valor que quiser.',
-  },
-  {
-    title: 'Acompanhe o impacto',
-    text: 'Sua contribuição aparece no painel de transparência assim que confirmada.',
-  },
-]
-
-const TESTIMONIALS = [
-  {
-    quote:
-      'Minha filha voltou a estudar com o reforço escolar da ONG. Hoje ela sonha em ser engenheira.',
-    author: 'Marta Ribeiro',
-    role: 'Mãe atendida pelo programa',
-  },
-  {
-    quote:
-      'Doo todo mês e consigo ver exatamente para onde o dinheiro vai. Essa clareza me fez continuar.',
-    author: 'Carlos Menezes',
-    role: 'Doador desde 2019',
-  },
-  {
-    quote:
-      'Como voluntária, vejo de perto o que cada real faz. Não é caridade, é reconstrução de futuro.',
-    author: 'Juliana Alves',
-    role: 'Voluntária',
+    title: 'Conciliação automática',
+    text: 'Divergências são apuradas continuamente. Zero intervenção manual, zero planilha.',
+    path: 'M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z',
   },
 ]
 
 const PARTNERS = [
-  'Instituto Amanhã',
-  'Rede Bem Viver',
-  'Fundação Horizonte',
-  'Coletivo Raízes',
+  'INSTITUTO AMANHÃ',
+  'REDE BEM VIVER',
+  'FUNDAÇÃO HORIZONTE',
+  'COLETIVO RAÍZES',
 ]
+
+const CHART_BARS = [35, 48, 40, 62, 51, 70, 58, 78, 66, 85, 72, 92, 80, 100]
 
 export function Home() {
   const { isAuthenticated } = useAuth()
-
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([])
 
   useEffect(() => {
@@ -86,140 +44,146 @@ export function Home() {
       .catch(() => setCampaigns([]))
   }, [])
 
-  const totalRaised = campaigns.reduce(
-    (sum, campaign) => sum + campaign.totalRaised,
-    0,
-  )
-
-  const yearsActive = new Date().getFullYear() - FOUNDED_YEAR
-
-  const metrics = [
-    { icon: 'chart', value: currency(totalRaised), label: 'Arrecadado na plataforma' },
-    { icon: 'heart', value: String(campaigns.length), label: 'Campanhas ativas' },
-    { icon: 'users', value: '1.240', label: 'Crianças atendidas' },
-    { icon: 'handshake', value: `${yearsActive}+`, label: 'Anos de atuação' },
-  ]
+  const totalRaised = campaigns.reduce((s, c) => s + c.totalRaised, 0)
 
   return (
-    <div className="space-y-20 sm:space-y-28">
+    <div className="space-y-24 sm:space-y-32">
       {/* ================= HERO ================= */}
-      <section className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="animate-rise space-y-6 text-center lg:text-left">
-          <span className="inline-flex items-center gap-2 rounded-full border border-neon/30 bg-neon/10 px-4 py-1.5 text-xs font-semibold tracking-wide text-neon">
-            <Icon name="sparkles" className="h-3.5 w-3.5" />
-            ONG Esperança Solidária
-          </span>
-
-          <h1 className="text-glow text-4xl leading-tight font-bold text-white sm:text-5xl lg:text-6xl">
-            Transformando doações em{' '}
-            <span className="bg-gradient-to-r from-neon via-violet to-magenta bg-clip-text text-transparent">
-              futuros possíveis
+      <section className="pt-6 text-center sm:pt-10">
+        <div className="mb-6 flex justify-center">
+          <span className="inline-flex items-center gap-2 rounded-full border border-line-2 py-1 pr-3.5 pl-1.5 text-xs text-muted">
+            <span className="rounded-full bg-brand px-2 py-0.5 text-[10.5px] font-semibold text-white">
+              NOVO
             </span>
-          </h1>
+            Painel de transparência em tempo real
+          </span>
+        </div>
 
-          <p className="mx-auto max-w-xl text-base text-slate-400 sm:text-lg lg:mx-0">
-            Há mais de {yearsActive} anos acolhemos crianças em situação de
-            vulnerabilidade. Agora, com a plataforma Conexão Solidária, você
-            acompanha cada real doado — do clique ao impacto.
-          </p>
+        <h1 className="mx-auto max-w-4xl text-4xl font-semibold tracking-tight text-fg sm:text-5xl lg:text-6xl">
+          A plataforma de doações que{' '}
+          <span className="bg-gradient-to-r from-[#c7d2fe] via-brand-2 to-brand bg-clip-text text-transparent">
+            prova cada real.
+          </span>
+        </h1>
 
-          <div className="flex flex-col gap-3 sm:flex-row sm:justify-center lg:justify-start">
-            <Link to="/campanhas">
-              <Button className="w-full sm:w-auto">Quero doar agora</Button>
+        <p className="mx-auto mt-6 max-w-2xl text-base text-muted sm:text-lg">
+          Arrecadação, conciliação e transparência num só lugar. Eventos
+          imutáveis, atualização em tempo real e um painel público que qualquer
+          doador pode auditar.
+        </p>
+
+        <div className="mt-8 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link to="/campanhas">
+            <Button variant="brand" className="w-full px-5 py-2.5 sm:w-auto">
+              Ver campanhas ativas
+            </Button>
+          </Link>
+          {!isAuthenticated && (
+            <Link to="/cadastro">
+              <Button className="w-full px-5 py-2.5 sm:w-auto">
+                Criar conta de doador
+              </Button>
             </Link>
+          )}
+        </div>
 
-            {!isAuthenticated && (
-              <Link to="/cadastro">
-                <Button variant="ghost" className="w-full sm:w-auto">
-                  Criar conta de doador
-                </Button>
-              </Link>
-            )}
+        <p className="mt-4 font-mono text-xs text-dim">
+          Sem taxa por doação · Painel público · Código aberto
+        </p>
+
+        {/* ---------- Mock do painel, flutuando ---------- */}
+        <div className="mx-auto mt-14 max-w-4xl overflow-hidden rounded-2xl border border-line-2 bg-panel text-left shadow-[0_40px_90px_-40px_rgba(0,0,0,0.9)]">
+          <div className="flex items-center gap-2 border-b border-line px-4 py-3">
+            <span className="h-2.5 w-2.5 rounded-full bg-line-2" />
+            <span className="h-2.5 w-2.5 rounded-full bg-line-2" />
+            <span className="h-2.5 w-2.5 rounded-full bg-line-2" />
+            <span className="ml-2 font-mono text-[11px] text-dim">
+              conexao-solidaria.org/painel
+            </span>
+            <span className="ml-auto flex items-center gap-1.5 font-mono text-[11px] text-ok">
+              <span className="status-dot" /> ao vivo
+            </span>
           </div>
 
-          <p className="text-xs text-slate-600">
-            Doação 100% rastreável · Sem taxas · Painel público de transparência
-          </p>
-        </div>
+          <div className="grid sm:grid-cols-[180px_1fr]">
+            <div className="hidden border-r border-line p-3 sm:block">
+              {['Visão geral', 'Campanhas', 'Doações', 'Doadores', 'Relatórios', 'Auditoria'].map(
+                (item, i) => (
+                  <div
+                    key={item}
+                    className={`rounded-md px-2.5 py-2 text-[13px] ${
+                      i === 0 ? 'bg-brand-soft text-fg' : 'text-muted'
+                    }`}
+                  >
+                    {item}
+                  </div>
+                ),
+              )}
+            </div>
 
-        <div className="animate-rise flex justify-center">
-          <HeroArt className="w-full max-w-sm lg:max-w-lg" />
+            <div className="p-4 sm:p-5">
+              <div className="grid grid-cols-3 gap-2.5">
+                {[
+                  { l: 'Arrecadado', n: currency(totalRaised || 284310), d: '↑ 18,4%' },
+                  { l: 'Campanhas', n: String(campaigns.length || 12), d: 'ativas' },
+                  { l: 'Doações', n: '1.847', d: '↑ 12,1%' },
+                ].map((k) => (
+                  <div
+                    key={k.l}
+                    className="rounded-lg border border-line bg-bg-2 p-3"
+                  >
+                    <div className="text-[11px] text-dim">{k.l}</div>
+                    <div className="tnum mt-1.5 text-lg text-fg">{k.n}</div>
+                    <div className="mt-1 text-[10.5px] text-ok">{k.d}</div>
+                  </div>
+                ))}
+              </div>
+
+              <div className="mt-3 rounded-lg border border-line bg-bg-2 p-4">
+                <div className="mb-3 flex justify-between font-mono text-[11px] text-dim">
+                  <span>arrecadação diária</span>
+                  <span>últimos 14 dias</span>
+                </div>
+                <div className="flex h-20 items-end gap-1.5">
+                  {CHART_BARS.map((h, i) => (
+                    <div
+                      key={i}
+                      className={`flex-1 rounded-t-sm ${
+                        i >= 11
+                          ? 'bg-gradient-to-t from-brand to-brand-2'
+                          : 'bg-line-2'
+                      }`}
+                      style={{ height: `${h}%` }}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* ================= MÉTRICAS ================= */}
-      <section className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {metrics.map((metric) => (
-          <Card
-            key={metric.label}
-            className="glass-hover flex flex-col items-center gap-2 p-5 text-center sm:p-6"
-          >
-            <Icon name={metric.icon} className="h-6 w-6 text-neon" />
-
-            <p className="text-xl font-bold text-white sm:text-3xl">
-              {metric.value}
-            </p>
-
-            <p className="text-xs text-slate-500 sm:text-sm">{metric.label}</p>
-          </Card>
-        ))}
-      </section>
-
-      {/* ================= SOBRE ================= */}
-      <section id="sobre" className="scroll-mt-24 space-y-10">
-        <header className="mx-auto max-w-3xl space-y-3 text-center">
-          <p className="text-xs font-semibold tracking-[0.3em] text-neon uppercase">
-            Quem somos
-          </p>
-
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            Uma década reconstruindo histórias
+      {/* ================= FEATURES ================= */}
+      <section>
+        <div className="mb-11 text-center">
+          <h2 className="text-3xl font-semibold tracking-tight text-fg">
+            Construído para provar, não prometer
           </h2>
-
-          <p className="text-slate-400">
-            Nascemos em {FOUNDED_YEAR}, em um galpão cedido no centro da cidade, atendendo
-            doze crianças. Hoje somos uma rede de acolhimento, educação e cuidado —
-            sustentada por pessoas que acreditam que ninguém deveria crescer sozinho.
+          <p className="mt-2.5 text-muted">
+            A arquitetura que dá credibilidade à sua arrecadação.
           </p>
-        </header>
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {PILLARS.map((pillar) => (
-            <Card key={pillar.title} className="glass-hover space-y-3">
-              <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-neon/20 to-violet/20 text-neon">
-                <Icon name={pillar.icon} className="h-5 w-5" />
-              </span>
-
-              <h3 className="font-semibold text-white">{pillar.title}</h3>
-
-              <p className="text-sm text-slate-400">{pillar.text}</p>
-            </Card>
-          ))}
         </div>
-      </section>
 
-      {/* ================= COMO FUNCIONA ================= */}
-      <section id="como-ajudar" className="scroll-mt-24 space-y-10">
-        <header className="mx-auto max-w-3xl space-y-3 text-center">
-          <p className="text-xs font-semibold tracking-[0.3em] text-violet uppercase">
-            Como ajudar
-          </p>
-
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            Três passos até o impacto
-          </h2>
-        </header>
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {STEPS.map((step, index) => (
-            <Card key={step.title} className="glass-hover space-y-3">
-              <span className="text-glow text-3xl font-bold text-neon/40">
-                0{index + 1}
-              </span>
-
-              <h3 className="font-semibold text-white">{step.title}</h3>
-
-              <p className="text-sm text-slate-400">{step.text}</p>
+        <div className="grid gap-4 md:grid-cols-3">
+          {FEATURES.map((f) => (
+            <Card key={f.title} className="p-6">
+              <div className="mb-3.5 grid h-9 w-9 place-items-center rounded-lg border border-line-2 bg-brand-soft text-brand-2">
+                <svg viewBox="0 0 24 24" className="h-4 w-4 fill-current">
+                  <path d={f.path} />
+                </svg>
+              </div>
+              <h3 className="font-medium tracking-tight text-fg">{f.title}</h3>
+              <p className="mt-1.5 text-sm text-muted">{f.text}</p>
             </Card>
           ))}
         </div>
@@ -227,30 +191,26 @@ export function Home() {
 
       {/* ================= CAMPANHAS ================= */}
       {campaigns.length > 0 && (
-        <section className="space-y-8">
-          <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-            <div className="space-y-2">
-              <p className="text-xs font-semibold tracking-[0.3em] text-neon uppercase">
-                Campanhas ativas
-              </p>
-
-              <h2 className="text-3xl font-bold text-white sm:text-4xl">
+        <section>
+          <div className="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <Badge tone="brand">Campanhas ativas</Badge>
+              <h2 className="mt-3 text-3xl font-semibold tracking-tight text-fg">
                 Onde sua doação vai agora
               </h2>
             </div>
-
             <Link to="/campanhas">
-              <Button variant="ghost" className="w-full sm:w-auto">
-                Ver todas
-              </Button>
+              <Button className="w-full sm:w-auto">Ver todas</Button>
             </Link>
-          </header>
+          </div>
 
-          <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {campaigns.slice(0, 3).map((campaign) => (
-              <CampaignCard key={campaign.id} campaign={campaign}>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {campaigns.slice(0, 3).map((c) => (
+              <CampaignCard key={c.id} campaign={c}>
                 <Link to="/campanhas" className="block">
-                  <Button className="w-full">Doar para esta campanha</Button>
+                  <Button variant="brand" className="w-full">
+                    Doar
+                  </Button>
                 </Link>
               </CampaignCard>
             ))}
@@ -258,82 +218,42 @@ export function Home() {
         </section>
       )}
 
-      {/* ================= DEPOIMENTOS ================= */}
-      <section className="space-y-10">
-        <header className="mx-auto max-w-3xl space-y-3 text-center">
-          <p className="text-xs font-semibold tracking-[0.3em] text-magenta uppercase">
-            Depoimentos
-          </p>
-
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
-            Quem vive essa história
-          </h2>
-        </header>
-
-        <div className="grid gap-5 md:grid-cols-3">
-          {TESTIMONIALS.map((item) => (
-            <Card key={item.author} className="glass-hover flex flex-col gap-4">
-              <p className="text-sm leading-relaxed text-slate-300 italic">
-                “{item.quote}”
-              </p>
-
-              <div className="mt-auto flex items-center gap-3 border-t border-white/10 pt-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-neon to-violet text-sm font-bold text-void">
-                  {item.author.charAt(0)}
-                </span>
-
-                <div>
-                  <p className="text-sm font-semibold text-white">
-                    {item.author}
-                  </p>
-
-                  <p className="text-xs text-slate-500">{item.role}</p>
-                </div>
-              </div>
-            </Card>
-          ))}
-        </div>
-      </section>
-
       {/* ================= PARCEIROS ================= */}
-      <section className="space-y-6">
-        <p className="text-center text-xs font-semibold tracking-[0.3em] text-slate-500 uppercase">
+      <section>
+        <p className="mb-8 text-center font-mono text-[11px] tracking-widest text-dim uppercase">
           Parceiros institucionais
         </p>
-
-        <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
-          {PARTNERS.map((partner) => (
-            <div
-              key={partner}
-              className="glass flex items-center justify-center rounded-xl px-4 py-5 text-center text-xs font-semibold tracking-wide text-slate-500 sm:text-sm"
+        <div className="flex flex-wrap items-center justify-center gap-x-12 gap-y-6 opacity-50">
+          {PARTNERS.map((p) => (
+            <span
+              key={p}
+              className="font-mono text-xs tracking-wider text-dim"
             >
-              {partner}
-            </div>
+              {p}
+            </span>
           ))}
         </div>
       </section>
 
-      {/* ================= CTA FINAL ================= */}
-      <section className="glass relative overflow-hidden rounded-3xl px-6 py-12 text-center sm:px-12 sm:py-16">
-        <div className="pointer-events-none absolute -top-24 left-1/2 h-64 w-64 -translate-x-1/2 rounded-full bg-neon/20 blur-[100px]" />
-
-        <div className="relative space-y-6">
-          <h2 className="text-glow text-3xl font-bold text-white sm:text-4xl">
-            Sua doação começa hoje
+      {/* ================= CTA ================= */}
+      <section className="relative overflow-hidden rounded-2xl border border-line-2 bg-panel px-6 py-14 text-center sm:px-12">
+        <div className="pointer-events-none absolute -top-20 left-1/2 h-56 w-56 -translate-x-1/2 rounded-full bg-brand/15 blur-[90px]" />
+        <div className="relative">
+          <h2 className="text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
+            Comece a arrecadar com transparência
           </h2>
-
-          <p className="mx-auto max-w-2xl text-slate-400">
+          <p className="mx-auto mt-4 max-w-2xl text-muted">
             Você escolhe a campanha, doa em segundos e acompanha o valor
-            arrecadado sendo atualizado em tempo real. Simples, aberto e auditável.
+            arrecadado sendo atualizado em tempo real. Aberto e auditável.
           </p>
-
-          <div className="flex flex-col justify-center gap-3 sm:flex-row">
+          <div className="mt-7 flex flex-col justify-center gap-3 sm:flex-row">
             <Link to="/campanhas">
-              <Button className="w-full sm:w-auto">Ver campanhas</Button>
+              <Button variant="brand" className="w-full px-5 py-2.5 sm:w-auto">
+                Ver campanhas
+              </Button>
             </Link>
-
             <Link to="/cadastro">
-              <Button variant="ghost" className="w-full sm:w-auto">
+              <Button className="w-full px-5 py-2.5 sm:w-auto">
                 Quero ser doador
               </Button>
             </Link>

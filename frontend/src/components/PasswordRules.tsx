@@ -24,7 +24,7 @@ export function isPasswordStrong(value: string): boolean {
 /** Espelha na tela as mesmas regras que a API aplica no cadastro. */
 export function PasswordRules({ value }: { value: string }) {
   return (
-    <ul className="space-y-1 rounded-xl border border-white/10 bg-white/5 px-4 py-3">
+    <ul className="space-y-1 rounded-lg border border-line bg-bg-2 px-4 py-3">
       {PASSWORD_RULES.map((rule) => {
         const ok = rule.test(value)
 
@@ -32,15 +32,13 @@ export function PasswordRules({ value }: { value: string }) {
           <li
             key={rule.label}
             className={`flex items-center gap-2 text-xs transition-colors ${
-              ok ? 'text-success' : 'text-slate-500'
+              ok ? 'text-ok' : 'text-dim'
             }`}
           >
             <span
               aria-hidden
               className={`flex h-3.5 w-3.5 shrink-0 items-center justify-center rounded-full border text-[9px] ${
-                ok
-                  ? 'border-success bg-success/20'
-                  : 'border-slate-600 bg-transparent'
+                ok ? 'border-ok bg-ok/20' : 'border-line-2 bg-transparent'
               }`}
             >
               {ok ? '✓' : ''}

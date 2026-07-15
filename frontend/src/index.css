@@ -1,57 +1,50 @@
 @import 'tailwindcss';
 
 @theme {
-  --color-void: #05070d;
-  --color-deep: #0a0f1c;
-  --color-surface: #0f1626;
+  /* Superfícies — dark sóbrio, sem transparências */
+  --color-bg: #08090c;
+  --color-bg-2: #0d0f14;
+  --color-panel: #0f1218;
+  --color-line: #191d26;
+  --color-line-2: #262c38;
 
-  --color-neon: #22d3ee;
-  --color-neon-soft: #67e8f9;
-  --color-violet: #8b5cf6;
-  --color-magenta: #e879f9;
+  /* Texto */
+  --color-fg: #f2f4f8;
+  --color-muted: #9aa3b2;
+  --color-dim: #616b7c;
 
-  --color-success: #34d399;
-  --color-danger: #fb7185;
+  /* Um acento, só um: índigo */
+  --color-brand: #6366f1;
+  --color-brand-2: #818cf8;
+  --color-brand-soft: #141821;
 
-  --font-sans: 'Inter', 'Segoe UI', system-ui, sans-serif;
-}
+  /* Semânticos */
+  --color-ok: #10b981;
+  --color-warn: #f5a524;
+  --color-danger: #f43f5e;
 
-@keyframes grid-drift {
-  from {
-    background-position: 0 0;
-  }
-  to {
-    background-position: 0 60px;
-  }
-}
-
-@keyframes pulse-glow {
-  0%,
-  100% {
-    opacity: 0.55;
-  }
-  50% {
-    opacity: 1;
-  }
-}
-
-@keyframes shimmer {
-  from {
-    transform: translateX(-100%);
-  }
-  to {
-    transform: translateX(250%);
-  }
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
 }
 
 @keyframes rise {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translateY(10px);
   }
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
   }
 }
 
@@ -62,67 +55,47 @@ body,
 }
 
 body {
-  background-color: var(--color-void);
-  color: #e2e8f0;
+  background-color: var(--color-bg);
+  color: var(--color-fg);
   font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.006em;
 }
 
-/* Malha em perspectiva que da o tom futurista ao fundo. */
-.bg-grid {
-  background-image:
-    linear-gradient(rgba(34, 211, 238, 0.07) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(34, 211, 238, 0.07) 1px, transparent 1px);
-  background-size: 60px 60px;
-  animation: grid-drift 12s linear infinite;
-}
-
-.glass {
-  background: linear-gradient(
-    160deg,
-    rgba(255, 255, 255, 0.07),
-    rgba(255, 255, 255, 0.02)
-  );
-  border: 1px solid rgba(148, 163, 184, 0.16);
-  backdrop-filter: blur(14px);
-}
-
-.glass-hover {
-  transition:
-    border-color 220ms ease,
-    transform 220ms ease,
-    box-shadow 220ms ease;
-}
-
-.glass-hover:hover {
-  border-color: rgba(34, 211, 238, 0.5);
-  transform: translateY(-3px);
-  box-shadow: 0 18px 45px -22px rgba(34, 211, 238, 0.75);
-}
-
-.text-glow {
-  text-shadow: 0 0 22px rgba(34, 211, 238, 0.45);
+/* Números sempre tabulares e monoespaçados: dá o ar de "sistema", não de folheto. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
 }
 
 .animate-rise {
-  animation: rise 500ms ease-out both;
+  animation: rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
-.animate-pulse-glow {
-  animation: pulse-glow 2.4s ease-in-out infinite;
-}
-
-/* Brilho que corre sobre a barra enquanto o Worker ainda nao processou a fila. */
-.shimmer::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  width: 40%;
-  background: linear-gradient(
-    90deg,
-    transparent,
-    rgba(255, 255, 255, 0.35),
-    transparent
+/* Halo único e discreto no topo — substitui os vários "blobs" neon de antes. */
+.brand-glow {
+  position: fixed;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 600px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(99, 102, 241, 0.13),
+    transparent 62%
   );
-  animation: shimmer 1.6s ease-in-out infinite;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-ok);
+  animation: pulse-dot 2.4s ease-in-out infinite;
 }

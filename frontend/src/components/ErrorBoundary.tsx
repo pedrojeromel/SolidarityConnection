@@ -37,23 +37,23 @@ export class ErrorBoundary extends Component<Props, State> {
     }
 
     return (
-      <div className="flex min-h-screen items-center justify-center bg-void p-6">
-        <div className="glass w-full max-w-lg space-y-4 rounded-2xl p-6">
-          <h1 className="text-xl font-bold text-danger">
+      <div className="flex min-h-screen items-center justify-center bg-bg p-6">
+        <div className="w-full max-w-lg space-y-4 rounded-2xl border border-line bg-panel p-6">
+          <h1 className="text-xl font-semibold text-danger">
             Algo deu errado nesta página
           </h1>
 
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             A aplicação encontrou um erro inesperado. Detalhes técnicos:
           </p>
 
-          <pre className="max-h-48 overflow-auto rounded-xl border border-white/10 bg-black/40 p-4 text-xs break-words whitespace-pre-wrap text-danger">
+          <pre className="max-h-48 overflow-auto rounded-lg border border-line bg-bg-2 p-4 text-xs break-words whitespace-pre-wrap text-danger">
             {error.message}
           </pre>
 
           <button
             onClick={this.reset}
-            className="w-full rounded-xl bg-gradient-to-r from-neon to-violet px-5 py-2.5 text-sm font-semibold text-void"
+            className="w-full rounded-lg bg-brand px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-[#5457e0]"
           >
             Voltar ao início
           </button>

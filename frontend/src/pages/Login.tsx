@@ -36,11 +36,11 @@ export function Login() {
 
   return (
     <div className="mx-auto max-w-md">
-      <Card className="animate-rise space-y-6">
+      <Card className="animate-rise space-y-6 p-6">
         <header className="space-y-2">
-          <h1 className="text-2xl font-bold text-white">Entrar</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">Entrar</h1>
 
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-muted">
             Acesse para doar ou gerenciar campanhas.
           </p>
         </header>
@@ -71,9 +71,9 @@ export function Login() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-slate-400">
+        <p className="text-center text-sm text-muted">
           Não tem conta?{' '}
-          <Link to="/cadastro" className="font-semibold text-neon hover:underline">
+          <Link to="/cadastro" className="font-medium text-brand-2 hover:underline">
             Cadastre-se como doador
           </Link>
         </p>

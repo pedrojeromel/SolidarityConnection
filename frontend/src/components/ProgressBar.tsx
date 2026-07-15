@@ -9,27 +9,20 @@ export function ProgressBar({ raised, goal, pending = false }: ProgressBarProps)
 
   return (
     <div className="space-y-2">
-      <div className="relative h-2.5 w-full overflow-hidden rounded-full bg-white/8">
+      <div className="h-1.5 w-full overflow-hidden rounded-full bg-line">
         <div
-          className="h-full rounded-full bg-gradient-to-r from-neon via-violet to-magenta transition-[width] duration-1000 ease-out"
+          className="h-full rounded-full bg-gradient-to-r from-brand to-brand-2 transition-[width] duration-700 ease-out"
           style={{ width: `${percent}%` }}
         />
-
-        {/* Enquanto o evento nao foi consumido, a barra "respira" para indicar
-            que existe uma doacao em transito na fila. */}
-        {pending && (
-          <div className="shimmer pointer-events-none absolute inset-0 overflow-hidden rounded-full" />
-        )}
       </div>
 
-      <div className="flex items-center justify-between text-xs">
-        <span className="font-medium text-neon-soft">
-          {percent.toFixed(1)}% da meta
-        </span>
+      <div className="flex items-center justify-between font-mono text-[11px]">
+        <span className="text-muted">{percent.toFixed(1)}% da meta</span>
 
         {pending && (
-          <span className="animate-pulse-glow font-medium text-magenta">
-            confirmando doação...
+          <span className="flex items-center gap-1.5 text-brand-2">
+            <span className="status-dot !bg-brand-2" />
+            confirmando…
           </span>
         )}
       </div>

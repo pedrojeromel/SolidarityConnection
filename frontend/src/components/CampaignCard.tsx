@@ -15,18 +15,15 @@ export function CampaignCard({
   children,
 }: CampaignCardProps) {
   return (
-    <Card className="glass-hover animate-rise flex h-full flex-col gap-4 sm:gap-5">
-      <h3 className="text-base font-semibold text-white sm:text-lg">
+    <Card className="animate-rise flex h-full flex-col gap-4 p-5 transition-colors hover:border-line-2">
+      <h3 className="text-base font-medium tracking-tight text-fg">
         {campaign.title}
       </h3>
 
-      <div className="space-y-1">
-        <p className="text-xl font-bold text-neon sm:text-2xl">
-          {currency(campaign.totalRaised)}
-        </p>
-
-        <p className="text-xs text-slate-500">
-          de {currency(campaign.financialGoal)} de meta
+      <div>
+        <p className="tnum text-2xl text-fg">{currency(campaign.totalRaised)}</p>
+        <p className="mt-0.5 font-mono text-xs text-dim">
+          meta {currency(campaign.financialGoal)}
         </p>
       </div>
 
@@ -36,8 +33,7 @@ export function CampaignCard({
         pending={pending}
       />
 
-      {/* Acoes variam conforme a tela e o perfil do usuario. */}
-      {children && <div className="mt-auto space-y-3">{children}</div>}
+      {children && <div className="mt-auto space-y-3 pt-1">{children}</div>}
     </Card>
   )
 }

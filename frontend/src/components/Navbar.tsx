@@ -11,7 +11,7 @@ interface NavItem {
 const PUBLIC_LINKS: NavItem[] = [
   { to: '/', label: 'Início' },
   { to: '/campanhas', label: 'Campanhas' },
-  { to: '/sobre', label: 'Sobre' },
+  { to: '/sobre', label: 'Instituição' },
   { to: '/contato', label: 'Contato' },
 ]
 
@@ -23,7 +23,6 @@ export function Navbar() {
   const [open, setOpen] = useState(false)
 
   // Navegar fecha o menu mobile: sem isso o painel fica aberto sobre a tela nova.
-  // Chaves obrigatorias: o retorno de um efeito e tratado como funcao de limpeza.
   useEffect(() => {
     setOpen(false)
   }, [location.pathname])
@@ -33,8 +32,8 @@ export function Navbar() {
     : PUBLIC_LINKS
 
   function navClass({ isActive }: { isActive: boolean }) {
-    return `text-sm font-medium transition ${
-      isActive ? 'text-neon' : 'text-slate-400 hover:text-white'
+    return `text-sm transition-colors ${
+      isActive ? 'text-fg' : 'text-muted hover:text-fg'
     }`
   }
 
@@ -45,18 +44,22 @@ export function Navbar() {
   }
 
   return (
-    <header className="glass sticky top-0 z-30 border-x-0 border-t-0">
-      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+    <header className="sticky top-0 z-40 border-b border-line bg-bg/80 backdrop-blur-lg">
+      <nav className="mx-auto flex max-w-7xl items-center justify-between gap-4 px-4 py-3.5 sm:px-6">
         <Link to="/" className="flex items-center gap-2.5">
-          <span className="animate-pulse-glow h-2.5 w-2.5 shrink-0 rounded-full bg-neon shadow-[0_0_12px_3px_rgba(34,211,238,0.8)]" />
+          <span className="grid h-6 w-6 place-items-center rounded-md bg-gradient-to-br from-brand to-brand-2">
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 fill-white">
+              <path d="M12 21s-7-4.35-9.33-8.4C.9 9.35 2.3 5.5 5.7 4.6c2-.53 4 .3 5.1 2 1.1-1.7 3.1-2.53 5.1-2 3.4.9 4.8 4.75 3.03 8C19.6 16.6 12 21 12 21Z" />
+            </svg>
+          </span>
 
-          <span className="text-glow text-base font-bold tracking-tight text-white sm:text-lg">
+          <span className="font-semibold tracking-tight text-fg">
             Conexão Solidária
           </span>
         </Link>
 
         {/* ---------- Desktop ---------- */}
-        <div className="hidden items-center gap-6 lg:flex">
+        <div className="hidden items-center gap-7 lg:flex">
           {links.map((link) => (
             <NavLink
               key={link.to}
@@ -69,8 +72,8 @@ export function Navbar() {
           ))}
 
           {session ? (
-            <div className="flex items-center gap-3">
-              <span className="max-w-[180px] truncate text-xs text-slate-500">
+            <div className="flex items-center gap-3 border-l border-line pl-6">
+              <span className="max-w-[160px] truncate font-mono text-xs text-dim">
                 {session.email}
               </span>
 
@@ -79,7 +82,14 @@ export function Navbar() {
               </Button>
             </div>
           ) : (
-            <Button onClick={() => navigate('/login')}>Entrar</Button>
+            <div className="flex items-center gap-2 border-l border-line pl-6">
+              <Button variant="ghost" onClick={() => navigate('/login')}>
+                Entrar
+              </Button>
+              <Button variant="brand" onClick={() => navigate('/campanhas')}>
+                Doar
+              </Button>
+            </div>
           )}
         </div>
 
@@ -89,7 +99,7 @@ export function Navbar() {
           onClick={() => setOpen((value) => !value)}
           aria-label={open ? 'Fechar menu' : 'Abrir menu'}
           aria-expanded={open}
-          className="inline-flex h-10 w-10 items-center justify-center rounded-xl border border-white/15 bg-white/5 text-slate-200 transition hover:border-neon/50 lg:hidden"
+          className="inline-flex h-9 w-9 items-center justify-center rounded-lg border border-line-2 text-muted transition hover:text-fg lg:hidden"
         >
           <svg
             viewBox="0 0 24 24"
@@ -111,7 +121,7 @@ export function Navbar() {
 
       {/* ---------- Painel do menu (mobile) ---------- */}
       {open && (
-        <div className="animate-rise border-t border-white/10 bg-deep/95 px-4 py-4 backdrop-blur-xl lg:hidden">
+        <div className="border-t border-line bg-bg-2 px-4 py-4 lg:hidden">
           <div className="mx-auto flex max-w-7xl flex-col gap-1">
             {links.map((link) => (
               <NavLink
@@ -119,10 +129,10 @@ export function Navbar() {
                 to={link.to}
                 end={link.to === '/'}
                 className={({ isActive }) =>
-                  `rounded-xl px-4 py-3 text-sm font-medium transition ${
+                  `rounded-lg px-3 py-2.5 text-sm transition ${
                     isActive
-                      ? 'bg-neon/10 text-neon'
-                      : 'text-slate-300 hover:bg-white/5'
+                      ? 'bg-brand-soft text-fg'
+                      : 'text-muted hover:bg-[#12151c]'
                   }`
                 }
               >
@@ -130,24 +140,33 @@ export function Navbar() {
               </NavLink>
             ))}
 
-            <div className="mt-3 border-t border-white/10 pt-3">
+            <div className="mt-3 border-t border-line pt-3">
               {session ? (
                 <div className="space-y-3">
-                  <p className="truncate px-4 text-xs text-slate-500">
+                  <p className="truncate px-3 font-mono text-xs text-dim">
                     {session.email}
                   </p>
-
-                  <Button variant="ghost" onClick={signOut} className="w-full">
+                  <Button variant="default" onClick={signOut} className="w-full">
                     Sair
                   </Button>
                 </div>
               ) : (
-                <Button
-                  onClick={() => navigate('/login')}
-                  className="w-full"
-                >
-                  Entrar
-                </Button>
+                <div className="flex flex-col gap-2">
+                  <Button
+                    variant="default"
+                    onClick={() => navigate('/login')}
+                    className="w-full"
+                  >
+                    Entrar
+                  </Button>
+                  <Button
+                    variant="brand"
+                    onClick={() => navigate('/campanhas')}
+                    className="w-full"
+                  >
+                    Doar
+                  </Button>
+                </div>
               )}
             </div>
           </div>

@@ -8,20 +8,14 @@ export function Layout() {
 
   // Trocar de rota volta ao topo: sem isso o usuario cai no meio da pagina nova.
   // O corpo precisa de chaves: uma arrow sem chaves devolveria o retorno de
-  // window.scrollTo, e o React trata o retorno do efeito como funcao de limpeza
-  // — chamando-o depois e quebrando com "... is not a function".
+  // window.scrollTo, e o React trata o retorno do efeito como funcao de limpeza.
   useEffect(() => {
     window.scrollTo(0, 0)
   }, [pathname])
 
   return (
     <div className="relative flex min-h-screen flex-col overflow-x-hidden">
-      {/* Camadas de fundo: malha animada + halos de cor. */}
-      <div className="bg-grid pointer-events-none absolute inset-0 opacity-60" />
-
-      <div className="pointer-events-none absolute -top-40 -left-32 h-72 w-72 rounded-full bg-neon/20 blur-[120px] sm:h-96 sm:w-96" />
-
-      <div className="pointer-events-none absolute top-1/3 -right-32 h-72 w-72 rounded-full bg-violet/20 blur-[120px] sm:h-96 sm:w-96" />
+      <div className="brand-glow" />
 
       <div className="relative z-10 flex min-h-screen flex-col">
         <Navbar />

@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { campaignService } from '../services/campaign.service'
 import { ProgressBar } from '../components/ProgressBar'
-import { Alert, Button, Card, Field, currency } from '../components/ui'
+import { Alert, Badge, Button, Card, Field, currency } from '../components/ui'
 import { ApiError } from '../services/http'
 import { maskMoney, parseMoney, toMoneyInput } from '../utils/masks'
 import { CampaignStatus, type Campaign, type CreateCampaignInput } from '../types'
@@ -13,8 +13,8 @@ const STATUS_LABEL: Record<number, string> = {
 }
 
 const STATUS_STYLE: Record<number, string> = {
-  [CampaignStatus.Active]: 'border-neon/40 bg-neon/10 text-neon',
-  [CampaignStatus.Completed]: 'border-success/40 bg-success/10 text-success',
+  [CampaignStatus.Active]: 'border-brand/40 bg-brand/10 text-brand-2',
+  [CampaignStatus.Completed]: 'border-ok/40 bg-ok/10 text-ok',
   [CampaignStatus.Cancelled]: 'border-danger/40 bg-danger/10 text-danger',
 }
 
@@ -122,11 +122,9 @@ export function ManagerDashboard() {
   return (
     <section className="space-y-8">
       <header className="space-y-2">
-        <p className="text-xs font-semibold tracking-[0.3em] text-violet uppercase">
-          Área do Gestor
-        </p>
+        <Badge tone="brand">Área do gestor</Badge>
 
-        <h1 className="text-glow text-2xl font-bold text-white sm:text-3xl">
+        <h1 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
           Gestão de campanhas
         </h1>
       </header>
@@ -135,8 +133,8 @@ export function ManagerDashboard() {
       {success && <Alert kind="success" message={success} />}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(320px,380px)_1fr]">
-        <Card className="animate-rise h-fit space-y-4">
-          <h2 className="font-semibold text-white">
+        <Card className="animate-rise h-fit space-y-4 p-5">
+          <h2 className="font-medium text-fg">
             {editingId ? 'Editar campanha' : 'Nova campanha'}
           </h2>
 
@@ -212,36 +210,32 @@ export function ManagerDashboard() {
 
         <div className="space-y-4">
           {campaigns.length === 0 ? (
-            <Card>
-              <p className="text-slate-400">Nenhuma campanha cadastrada.</p>
+            <Card className="p-5">
+              <p className="text-muted">Nenhuma campanha cadastrada.</p>
             </Card>
           ) : (
             campaigns.map((campaign) => (
-              <Card key={campaign.id} className="animate-rise space-y-4">
+              <Card key={campaign.id} className="animate-rise space-y-4 p-5">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
-                    <h3 className="font-semibold text-white">
-                      {campaign.title}
-                    </h3>
+                    <h3 className="font-medium text-fg">{campaign.title}</h3>
 
-                    <p className="text-sm text-slate-400">
-                      {campaign.description}
-                    </p>
+                    <p className="text-sm text-muted">{campaign.description}</p>
                   </div>
 
                   <span
-                    className={`rounded-full border px-3 py-1 text-xs font-semibold ${STATUS_STYLE[campaign.status]}`}
+                    className={`rounded-md border px-2.5 py-1 font-mono text-[10.5px] tracking-wider uppercase ${STATUS_STYLE[campaign.status]}`}
                   >
                     {STATUS_LABEL[campaign.status]}
                   </span>
                 </div>
 
                 <div className="flex items-baseline gap-2">
-                  <span className="text-xl font-bold text-neon">
+                  <span className="tnum text-xl text-fg">
                     {currency(campaign.totalRaised)}
                   </span>
 
-                  <span className="text-xs text-slate-500">
+                  <span className="font-mono text-xs text-dim">
                     de {currency(campaign.financialGoal)}
                   </span>
                 </div>

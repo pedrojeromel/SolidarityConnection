@@ -57,11 +57,13 @@ export function Register() {
 
   return (
     <div className="mx-auto max-w-md">
-      <Card className="animate-rise space-y-6">
+      <Card className="animate-rise space-y-6 p-6">
         <header className="space-y-2">
-          <h1 className="text-2xl font-bold text-white">Criar conta</h1>
+          <h1 className="text-2xl font-semibold tracking-tight text-fg">
+            Criar conta
+          </h1>
 
-          <p className="text-sm text-slate-400">Cadastro público de doador.</p>
+          <p className="text-sm text-muted">Cadastro público de doador.</p>
         </header>
 
         {error && <Alert kind="error" message={error} />}
@@ -120,7 +122,7 @@ export function Register() {
             {confirmation.length > 0 && (
               <p
                 className={`text-xs ${
-                  passwordsMatch ? 'text-success' : 'text-danger'
+                  passwordsMatch ? 'text-ok' : 'text-danger'
                 }`}
               >
                 {passwordsMatch
@@ -140,9 +142,9 @@ export function Register() {
           </Button>
         </form>
 
-        <p className="text-center text-sm text-slate-400">
+        <p className="text-center text-sm text-muted">
           Já tem conta?{' '}
-          <Link to="/login" className="font-semibold text-neon hover:underline">
+          <Link to="/login" className="font-medium text-brand-2 hover:underline">
             Entrar
           </Link>
         </p>

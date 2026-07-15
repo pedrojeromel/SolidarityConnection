@@ -8,17 +8,21 @@ export function Card({
   className?: string
 }) {
   return (
-    <div className={`glass rounded-2xl p-6 ${className}`}>{children}</div>
+    <div
+      className={`rounded-xl border border-line bg-panel ${className}`}
+    >
+      {children}
+    </div>
   )
 }
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: 'primary' | 'ghost' | 'danger'
+  variant?: 'brand' | 'default' | 'ghost' | 'danger'
   loading?: boolean
 }
 
 export function Button({
-  variant = 'primary',
+  variant = 'default',
   loading = false,
   children,
   className = '',
@@ -26,22 +30,44 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const styles: Record<string, string> = {
-    primary:
-      'bg-gradient-to-r from-neon to-violet text-void shadow-[0_10px_30px_-12px_rgba(34,211,238,0.9)] hover:brightness-110',
-    ghost:
-      'border border-white/15 bg-white/5 text-slate-200 hover:border-neon/50 hover:text-white',
+    brand: 'bg-brand text-white hover:bg-[#5457e0] border border-brand',
+    default:
+      'border border-line-2 bg-transparent text-fg hover:bg-[#12151c]',
+    ghost: 'text-muted hover:text-fg hover:bg-[#12151c]',
     danger:
-      'border border-danger/40 bg-danger/10 text-danger hover:bg-danger/20',
+      'border border-danger/40 bg-danger/10 text-danger hover:bg-danger/15',
   }
 
   return (
     <button
       disabled={disabled || loading}
-      className={`inline-flex items-center justify-center gap-2 rounded-xl px-5 py-2.5 text-sm font-semibold transition disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`}
+      className={`inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`}
       {...rest}
     >
-      {loading ? 'Processando...' : children}
+      {loading ? 'Processando…' : children}
     </button>
+  )
+}
+
+export function Badge({
+  children,
+  tone = 'brand',
+}: {
+  children: ReactNode
+  tone?: 'brand' | 'ok' | 'muted'
+}) {
+  const tones: Record<string, string> = {
+    brand: 'border-brand/30 text-brand-2',
+    ok: 'border-ok/30 text-ok',
+    muted: 'border-line-2 text-dim',
+  }
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 rounded-md border px-2 py-0.5 font-mono text-[10.5px] tracking-wider uppercase ${tones[tone]}`}
+    >
+      {children}
+    </span>
   )
 }
 
@@ -52,13 +78,11 @@ interface FieldProps extends InputHTMLAttributes<HTMLInputElement> {
 export function Field({ label, id, ...rest }: FieldProps) {
   return (
     <label htmlFor={id} className="block space-y-1.5">
-      <span className="text-xs font-medium tracking-wide text-slate-400 uppercase">
-        {label}
-      </span>
+      <span className="text-xs font-medium text-muted">{label}</span>
 
       <input
         id={id}
-        className="w-full rounded-xl border border-white/12 bg-void/60 px-4 py-2.5 text-sm text-slate-100 outline-none transition placeholder:text-slate-600 focus:border-neon/60 focus:ring-2 focus:ring-neon/25"
+        className="w-full rounded-lg border border-line-2 bg-bg-2 px-3.5 py-2.5 text-sm text-fg outline-none transition placeholder:text-dim focus:border-brand/70 focus:ring-2 focus:ring-brand/20"
         {...rest}
       />
     </label>
@@ -75,12 +99,12 @@ export function Alert({
   const styles =
     kind === 'error'
       ? 'border-danger/40 bg-danger/10 text-danger'
-      : 'border-success/40 bg-success/10 text-success'
+      : 'border-ok/40 bg-ok/10 text-ok'
 
   return (
     <p
       role="status"
-      className={`rounded-xl border px-4 py-2.5 text-sm ${styles}`}
+      className={`rounded-lg border px-4 py-2.5 text-sm ${styles}`}
     >
       {message}
     </p>

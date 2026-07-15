@@ -1,0 +1,223 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Direção C — SaaS Product</title>
+<style>
+  :root {
+    --bg: #08090c;
+    --bg-2: #0d0f14;
+    --panel: #0f1218;
+    --line: #191d26;
+    --line-2: #262c38;
+    --text: #f2f4f8;
+    --muted: #9aa3b2;
+    --dim: #616b7c;
+    --brand: #6366f1;       /* índigo: um acento, só um */
+    --brand-2: #818cf8;
+    --ok: #10b981;
+    --sans: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    --mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: var(--sans);
+         font-size: 15px; line-height: 1.55; -webkit-font-smoothing: antialiased; }
+  /* halo único e discreto, no topo — nada de neon espalhado */
+  body::before {
+    content: ""; position: fixed; top: -30%; left: 50%; transform: translateX(-50%);
+    width: 900px; height: 600px; pointer-events: none; z-index: 0;
+    background: radial-gradient(ellipse at center, rgba(99,102,241,.14), transparent 62%);
+  }
+  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 26px; position: relative; z-index: 1; }
+
+  header { border-bottom: 1px solid var(--line); position: sticky; top: 0;
+           background: rgba(8,9,12,.8); backdrop-filter: blur(10px); z-index: 40; }
+  nav { display: flex; align-items: center; justify-content: space-between; height: 60px; }
+  .brand { display: flex; align-items: center; gap: 9px; font-weight: 600; letter-spacing: -.02em; }
+  .logo { width: 24px; height: 24px; border-radius: 6px;
+          background: linear-gradient(135deg, var(--brand), var(--brand-2));
+          display: grid; place-items: center; }
+  .logo svg { width: 13px; height: 13px; }
+  .links { display: flex; gap: 28px; font-size: 14px; color: var(--muted); }
+  .links a { color: inherit; text-decoration: none; }
+  .links a:hover { color: var(--text); }
+  .actions { display: flex; gap: 8px; align-items: center; }
+  .btn { font: inherit; font-size: 13.5px; font-weight: 550; padding: 8px 15px; border-radius: 8px;
+         border: 1px solid var(--line-2); background: transparent; color: var(--text); cursor: pointer; }
+  .btn:hover { background: #12151c; }
+  .btn-brand { background: var(--brand); border-color: var(--brand); color: #fff; }
+  .btn-brand:hover { background: #5457e0; }
+
+  /* -------- hero centralizado, estilo landing de produto -------- */
+  .hero { text-align: center; padding: 92px 0 64px; }
+  .badge {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; color: var(--muted);
+    border: 1px solid var(--line-2); border-radius: 100px; padding: 5px 13px 5px 6px; margin-bottom: 26px;
+  }
+  .badge b { background: var(--brand); color: #fff; font-size: 10.5px; font-weight: 600;
+             padding: 2px 7px; border-radius: 100px; letter-spacing: .02em; }
+  h1 { font-size: 58px; line-height: 1.04; letter-spacing: -.035em; font-weight: 640; margin-bottom: 22px; }
+  h1 .grad { background: linear-gradient(120deg,#c7d2fe,#818cf8 60%,#6366f1);
+             -webkit-background-clip: text; background-clip: text; color: transparent; }
+  .lede { font-size: 18px; color: var(--muted); max-width: 54ch; margin: 0 auto 30px; }
+  .cta-row { display: flex; gap: 11px; justify-content: center; }
+  .microcopy { margin-top: 16px; font-size: 12.5px; color: var(--dim); }
+
+  /* -------- mock do app, "flutuando" -------- */
+  .app-shell {
+    margin: 54px auto 0; max-width: 1000px; border: 1px solid var(--line-2); border-radius: 14px;
+    background: var(--panel); overflow: hidden;
+    box-shadow: 0 40px 90px -40px rgba(0,0,0,.9), 0 0 0 1px rgba(255,255,255,.02) inset;
+  }
+  .app-top { display: flex; align-items: center; gap: 7px; padding: 12px 15px; border-bottom: 1px solid var(--line); }
+  .app-top i { width: 11px; height: 11px; border-radius: 50%; background: #2a2f3a; display: block; }
+  .app-top span { margin-left: 10px; font-family: var(--mono); font-size: 11.5px; color: var(--dim); }
+  .app-body { display: grid; grid-template-columns: 200px 1fr; min-height: 300px; }
+  .side { border-right: 1px solid var(--line); padding: 16px 12px; }
+  .side .item { font-size: 13px; color: var(--muted); padding: 8px 10px; border-radius: 7px; margin-bottom: 2px; }
+  .side .item.on { background: #141821; color: var(--text); }
+  .content { padding: 22px; }
+  .kpis { display: grid; grid-template-columns: repeat(3,1fr); gap: 12px; margin-bottom: 18px; }
+  .kpi { border: 1px solid var(--line); border-radius: 10px; padding: 14px; background: var(--bg-2); }
+  .kpi .l { font-size: 12px; color: var(--dim); margin-bottom: 8px; }
+  .kpi .n { font-size: 22px; font-weight: 620; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+  .kpi .d { font-size: 11.5px; color: var(--ok); margin-top: 4px; }
+  .chart { border: 1px solid var(--line); border-radius: 10px; padding: 16px; background: var(--bg-2); }
+  .chart-head { display: flex; justify-content: space-between; margin-bottom: 14px; font-size: 12.5px; color: var(--dim); }
+  .bars { display: flex; align-items: flex-end; gap: 6px; height: 90px; }
+  .bars i { flex: 1; background: #1b2130; border-radius: 3px 3px 0 0; }
+  .bars i.b { background: linear-gradient(180deg, var(--brand-2), var(--brand)); }
+
+  /* -------- faixa de features -------- */
+  section { padding: 70px 0; border-top: 1px solid var(--line); }
+  .feat-head { text-align: center; margin-bottom: 44px; }
+  .feat-head h2 { font-size: 32px; letter-spacing: -.025em; font-weight: 620; margin-bottom: 10px; }
+  .feat-head p { color: var(--muted); font-size: 16px; }
+  .feats { display: grid; grid-template-columns: repeat(3,1fr); gap: 18px; }
+  .feat { border: 1px solid var(--line); border-radius: 12px; padding: 22px; background: var(--panel); }
+  .feat .ic { width: 34px; height: 34px; border-radius: 9px; background: #141821; border: 1px solid var(--line-2);
+              display: grid; place-items: center; margin-bottom: 14px; color: var(--brand-2); }
+  .feat h3 { font-size: 16px; font-weight: 580; letter-spacing: -.01em; margin-bottom: 7px; }
+  .feat p { font-size: 14px; color: var(--muted); }
+
+  .logos { display: flex; justify-content: center; gap: 42px; opacity: .45; flex-wrap: wrap;
+           font-family: var(--mono); font-size: 12.5px; letter-spacing: .05em; color: var(--dim); }
+  footer { border-top: 1px solid var(--line); padding: 30px 0; display: flex; justify-content: space-between;
+           font-size: 12.5px; color: var(--dim); }
+  @media (max-width: 900px) {
+    h1 { font-size: 38px; } .app-body { grid-template-columns: 1fr; } .side { display: none; }
+    .kpis, .feats { grid-template-columns: 1fr; } .links { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <nav>
+      <div class="brand">
+        <span class="logo"><svg viewBox="0 0 24 24" fill="#fff"><path d="M12 21s-7-4.35-9.33-8.4C.9 9.35 2.3 5.5 5.7 4.6c2-.53 4 .3 5.1 2 1.1-1.7 3.1-2.53 5.1-2 3.4.9 4.8 4.75 3.03 8C19.6 16.6 12 21 12 21Z"/></svg></span>
+        Conexão Solidária
+      </div>
+      <div class="links">
+        <a href="#">Produto</a>
+        <a href="#">Campanhas</a>
+        <a href="#">Transparência</a>
+        <a href="#">Preços</a>
+      </div>
+      <div class="actions">
+        <button class="btn">Entrar</button>
+        <button class="btn btn-brand">Começar</button>
+      </div>
+    </nav>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="badge"><b>NOVO</b> Painel de transparência em tempo real</div>
+    <h1>A plataforma de doações<br />que <span class="grad">prova cada real.</span></h1>
+    <p class="lede">
+      Arrecadação, conciliação e transparência num só lugar. Eventos imutáveis,
+      atualização em tempo real e um painel público que qualquer doador pode auditar.
+    </p>
+    <div class="cta-row">
+      <button class="btn btn-brand">Ver campanhas ativas</button>
+      <button class="btn">Agendar demonstração</button>
+    </div>
+    <div class="microcopy">Sem taxa por doação · Implantação em minutos · Código aberto</div>
+
+    <div class="app-shell">
+      <div class="app-top"><i></i><i></i><i></i><span>conexao-solidaria.org/painel</span></div>
+      <div class="app-body">
+        <div class="side">
+          <div class="item on">Visão geral</div>
+          <div class="item">Campanhas</div>
+          <div class="item">Doações</div>
+          <div class="item">Doadores</div>
+          <div class="item">Relatórios</div>
+          <div class="item">Auditoria</div>
+        </div>
+        <div class="content">
+          <div class="kpis">
+            <div class="kpi"><div class="l">Arrecadado (mês)</div><div class="n">R$ 284.310</div><div class="d">↑ 18,4% vs. anterior</div></div>
+            <div class="kpi"><div class="l">Doações</div><div class="n">1.847</div><div class="d">↑ 12,1%</div></div>
+            <div class="kpi"><div class="l">Ticket médio</div><div class="n">R$ 153,93</div><div class="d">↑ 5,6%</div></div>
+          </div>
+          <div class="chart">
+            <div class="chart-head"><span>Arrecadação diária</span><span>últimos 14 dias</span></div>
+            <div class="bars">
+              <i style="height:35%"></i><i style="height:48%"></i><i style="height:40%"></i>
+              <i style="height:62%"></i><i style="height:51%"></i><i style="height:70%"></i>
+              <i style="height:58%"></i><i style="height:78%"></i><i style="height:66%"></i>
+              <i style="height:85%"></i><i style="height:72%"></i><i class="b" style="height:92%"></i>
+              <i class="b" style="height:80%"></i><i class="b" style="height:100%"></i>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <section>
+    <div class="feat-head">
+      <h2>Construído para provar, não prometer</h2>
+      <p>A arquitetura que dá credibilidade à sua arrecadação.</p>
+    </div>
+    <div class="feats">
+      <div class="feat">
+        <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3Z"/></svg></div>
+        <h3>Eventos imutáveis</h3>
+        <p>Cada doação vira um evento registrado que nunca é sobrescrito — só há uma versão da verdade.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M4 20h16v2H2V2h2v18Zm4-2H6v-6h2v6Zm4 0h-2V8h2v10Zm4 0h-2v-8h2v8Z"/></svg></div>
+        <h3>Painel em tempo real</h3>
+        <p>O valor arrecadado é atualizado automaticamente assim que o pagamento é confirmado.</p>
+      </div>
+      <div class="feat">
+        <div class="ic"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M9 16.2 4.8 12l-1.4 1.4L9 19 21 7l-1.4-1.4z"/></svg></div>
+        <h3>Conciliação automática</h3>
+        <p>Divergências são apuradas continuamente. Zero intervenção manual, zero planilha.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="logos">
+      <span>INSTITUTO AMANHÃ</span><span>REDE BEM VIVER</span>
+      <span>FUNDAÇÃO HORIZONTE</span><span>COLETIVO RAÍZES</span>
+    </div>
+  </section>
+
+  <footer>
+    <span>© 2026 ONG Esperança Solidária</span>
+    <span>Conexão Solidária v1.2.1</span>
+  </footer>
+</div>
+
+</body>
+</html>

@@ -4,7 +4,7 @@ import { campaignService } from '../services/campaign.service'
 import { donationService } from '../services/donation.service'
 import { useAuth } from '../hooks/useAuth'
 import { CampaignCard } from '../components/CampaignCard'
-import { Alert, Button, Card, Field } from '../components/ui'
+import { Alert, Badge, Button, Card, Field } from '../components/ui'
 import { ApiError } from '../services/http'
 import { maskMoney, parseMoney } from '../utils/masks'
 import type { ActiveCampaign } from '../types'
@@ -112,15 +112,13 @@ export function TransparencyPanel() {
   return (
     <section className="space-y-8">
       <header className="space-y-3">
-        <p className="text-xs font-semibold tracking-[0.3em] text-neon uppercase">
-          Painel de Transparência
-        </p>
+        <Badge tone="brand">Painel de transparência</Badge>
 
-        <h1 className="text-glow text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
+        <h1 className="text-3xl font-semibold tracking-tight text-fg sm:text-4xl">
           Campanhas ativas
         </h1>
 
-        <p className="max-w-2xl text-slate-400">
+        <p className="max-w-2xl text-muted">
           Acompanhe em tempo real quanto cada campanha já arrecadou. Toda doação é
           confirmada em instantes e o valor aparece aqui automaticamente.
         </p>
@@ -136,12 +134,12 @@ export function TransparencyPanel() {
       )}
 
       {loading ? (
-        <p className="animate-pulse-glow text-slate-500">Carregando campanhas...</p>
+        <p className="animate-pulse font-mono text-sm text-dim">
+          Carregando campanhas…
+        </p>
       ) : campaigns.length === 0 ? (
-        <Card>
-          <p className="text-slate-400">
-            Nenhuma campanha ativa no momento.
-          </p>
+        <Card className="p-6">
+          <p className="text-muted">Nenhuma campanha ativa no momento.</p>
         </Card>
       ) : (
         <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -152,28 +150,29 @@ export function TransparencyPanel() {
               pending={pendingIds.includes(campaign.id)}
             >
               {isDonor && selectedId !== campaign.id && (
-                <Button onClick={() => setSelectedId(campaign.id)}>
+                <Button variant="brand" onClick={() => setSelectedId(campaign.id)}>
                   Doar agora
                 </Button>
               )}
 
               {/* Visitante: leva direto ao login, em vez de so esconder o botao. */}
               {!isAuthenticated && (
-                <Button variant="ghost" onClick={() => navigate('/login')}>
+                <Button onClick={() => navigate('/login')}>
                   Entrar para doar
                 </Button>
               )}
 
               {/* Gestor nao doa: a API restringe doacoes ao perfil Doador. */}
               {isManager && (
-                <p className="rounded-xl border border-white/10 bg-white/5 px-4 py-2.5 text-xs text-slate-400">
-                  Você está conectado como <strong>gestor</strong>. Doações são
-                  feitas por contas de <strong>doador</strong>.
+                <p className="rounded-lg border border-line bg-bg-2 px-4 py-2.5 text-xs text-muted">
+                  Você está conectado como <strong className="text-fg">gestor</strong>.
+                  Doações são feitas por contas de{' '}
+                  <strong className="text-fg">doador</strong>.
                 </p>
               )}
 
               {isDonor && selectedId === campaign.id && (
-                <div className="space-y-3 border-t border-white/10 pt-4">
+                <div className="space-y-3 border-t border-line pt-4">
                   <Field
                     id={`amount-${campaign.id}`}
                     label="Valor da doação (R$)"
@@ -186,6 +185,7 @@ export function TransparencyPanel() {
 
                   <div className="flex gap-2">
                     <Button
+                      variant="brand"
                       loading={donating}
                       onClick={() => void donate(campaign.id)}
                       className="flex-1"

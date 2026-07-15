@@ -1,5 +1,4 @@
-import { HeroArt, Icon } from '../components/Illustrations'
-import { Card } from '../components/ui'
+import { Badge, Card } from '../components/ui'
 
 const TIMELINE = [
   {
@@ -26,96 +25,86 @@ const TIMELINE = [
 
 const VALUES = [
   {
-    icon: 'heart',
     title: 'Missão',
     text: 'Acolher e desenvolver crianças e adolescentes em situação de vulnerabilidade, garantindo direitos básicos e oportunidades reais.',
   },
   {
-    icon: 'sparkles',
     title: 'Visão',
     text: 'Ser referência em acolhimento com transparência radical, onde cada doador sabe exatamente o destino da sua contribuição.',
   },
   {
-    icon: 'shield',
     title: 'Valores',
     text: 'Dignidade, prestação de contas, escuta ativa e compromisso com resultados mensuráveis.',
   },
 ]
 
+const FIGURES = [
+  { n: '1.240', l: 'crianças atendidas' },
+  { n: 'R$ 2,4M', l: 'arrecadado desde 2015' },
+  { n: '100%', l: 'das doações rastreadas' },
+]
+
 export function About() {
   return (
     <div className="space-y-20 sm:space-y-24">
-      <section className="grid items-center gap-10 lg:grid-cols-2 lg:gap-16">
-        <div className="animate-rise space-y-5 text-center lg:text-left">
-          <p className="text-xs font-semibold tracking-[0.3em] text-neon uppercase">
-            Sobre nós
-          </p>
+      <section className="max-w-3xl">
+        <Badge tone="brand">Sobre nós</Badge>
+        <h1 className="mt-4 text-3xl font-semibold tracking-tight text-fg sm:text-4xl lg:text-5xl">
+          Cuidar é um trabalho de continuidade
+        </h1>
+        <p className="mt-5 text-muted sm:text-lg">
+          A ONG Esperança Solidária existe para que nenhuma criança precise
+          escolher entre estudar e comer. Atuamos com acolhimento diário, reforço
+          escolar, alimentação e apoio às famílias — e prestamos contas de cada
+          real recebido.
+        </p>
 
-          <h1 className="text-glow text-3xl font-bold text-white sm:text-4xl lg:text-5xl">
-            Cuidar é um trabalho de continuidade
-          </h1>
-
-          <p className="mx-auto max-w-xl text-slate-400 lg:mx-0">
-            A ONG Esperança Solidária existe para que nenhuma criança precise
-            escolher entre estudar e comer. Atuamos com acolhimento diário,
-            reforço escolar, alimentação e apoio às famílias — e prestamos contas
-            de cada real recebido.
-          </p>
-        </div>
-
-        <div className="flex justify-center">
-          <HeroArt className="w-full max-w-xs lg:max-w-md" />
+        <div className="mt-9 grid grid-cols-3 gap-6 border-t border-line pt-7">
+          {FIGURES.map((f) => (
+            <div key={f.l}>
+              <div className="tnum text-2xl text-fg sm:text-3xl">{f.n}</div>
+              <div className="mt-1 text-xs text-dim">{f.l}</div>
+            </div>
+          ))}
         </div>
       </section>
 
-      <section className="grid gap-5 md:grid-cols-3">
+      <section className="grid gap-4 md:grid-cols-3">
         {VALUES.map((value) => (
-          <Card key={value.title} className="glass-hover space-y-3">
-            <span className="inline-flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-neon/20 to-violet/20 text-neon">
-              <Icon name={value.icon} className="h-5 w-5" />
-            </span>
-
-            <h2 className="font-semibold text-white">{value.title}</h2>
-
-            <p className="text-sm text-slate-400">{value.text}</p>
+          <Card key={value.title} className="space-y-2 p-6">
+            <h2 className="font-medium text-fg">{value.title}</h2>
+            <p className="text-sm text-muted">{value.text}</p>
           </Card>
         ))}
       </section>
 
-      <section className="space-y-10">
-        <header className="mx-auto max-w-2xl space-y-3 text-center">
-          <p className="text-xs font-semibold tracking-[0.3em] text-violet uppercase">
-            Nossa trajetória
-          </p>
-
-          <h2 className="text-3xl font-bold text-white sm:text-4xl">
+      <section>
+        <div className="mb-9 max-w-2xl">
+          <Badge tone="muted">Nossa trajetória</Badge>
+          <h2 className="mt-3 text-3xl font-semibold tracking-tight text-fg">
             De doze crianças a uma rede de apoio
           </h2>
-        </header>
+        </div>
 
-        <ol className="relative space-y-6 border-l border-white/10 pl-6 sm:pl-8">
+        <ol className="relative space-y-4 border-l border-line pl-6 sm:pl-8">
           {TIMELINE.map((item) => (
             <li key={item.year} className="relative">
-              <span className="absolute top-2 -left-[31px] h-3 w-3 rounded-full bg-neon shadow-[0_0_10px_2px_rgba(34,211,238,0.6)] sm:-left-[39px]" />
-
-              <Card className="glass-hover space-y-2">
-                <span className="text-sm font-bold text-neon">{item.year}</span>
-
-                <h3 className="font-semibold text-white">{item.title}</h3>
-
-                <p className="text-sm text-slate-400">{item.text}</p>
+              <span className="absolute top-3 -left-[27px] h-2.5 w-2.5 rounded-full bg-brand sm:-left-[35px]" />
+              <Card className="space-y-1.5 p-5">
+                <span className="font-mono text-sm text-brand-2">{item.year}</span>
+                <h3 className="font-medium text-fg">{item.title}</h3>
+                <p className="text-sm text-muted">{item.text}</p>
               </Card>
             </li>
           ))}
         </ol>
       </section>
 
-      <section className="glass space-y-4 rounded-3xl px-6 py-10 text-center sm:px-12">
-        <h2 className="text-2xl font-bold text-white sm:text-3xl">
+      <section className="rounded-2xl border border-line bg-panel px-6 py-10 text-center sm:px-12">
+        <h2 className="text-2xl font-semibold tracking-tight text-fg sm:text-3xl">
           Transparência não é promessa, é processo
         </h2>
-
-        <p className="mx-auto max-w-2xl text-sm text-slate-400 sm:text-base">
+        <p className="mx-auto mt-4 max-w-2xl text-sm text-muted sm:text-base">
           Toda doação recebida é registrada individualmente e o valor arrecadado
           de cada campanha é publicado no painel público, atualizado
           automaticamente após a confirmação do pagamento.
