@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mailpit
+  namespace: solidarity
+spec:
+  selector:
+    app: mailpit
+  ports:
+    - name: smtp
+      port: 1025
+      targetPort: 1025
+    - name: web
+      port: 8025
+      targetPort: 8025
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mailpit
+  namespace: solidarity
+  labels:
+    app: mailpit
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mailpit
+  template:
+    metadata:
+      labels:
+        app: mailpit
+    spec:
+      containers:
+        - name: mailpit
+          image: axllent/mailpit:latest
+          ports:
+            - containerPort: 1025
+            - containerPort: 8025
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solidarity-email-worker
+  namespace: solidarity
+  labels:
+    app: solidarity-email-worker
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    kubernetes.io/change-cause: "Deploy versao 1.0.0"
+spec:
+  replicas: 1
+  revisionHistoryLimit: 5
+  selector:
+    matchLabels:
+      app: solidarity-email-worker
+  template:
+    metadata:
+      labels:
+        app: solidarity-email-worker
+        app.kubernetes.io/version: "1.0.0"
+    spec:
+      initContainers:
+        - name: wait-for-rabbitmq
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - until nc -z rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done
+      containers:
+        - name: solidarity-email-worker
+          image: solidarity-email-worker:1.0.0
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_VERSION
+              value: "1.0.0"
+            - name: RabbitMq__Host
+              value: "rabbitmq"
+            # Por padrão envia para o Mailpit (sem credenciais).
+            - name: Smtp__Host
+              value: "mailpit"
+            - name: Smtp__Port
+              value: "1025"
+            # Para um SMTP real, aplique o Secret solidarity-smtp
+            # (ver k8s/13-email-secret.example.yaml) e descomente o bloco abaixo.
+            # envFrom:
+            #   - secretRef:
+            #       name: solidarity-smtp
+          resources:
+            requests:
+              cpu: 50m
+              memory: 96Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi

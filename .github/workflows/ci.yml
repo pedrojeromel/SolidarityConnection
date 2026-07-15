@@ -147,6 +147,10 @@ jobs:
             image: solidarity-worker
             context: .
             dockerfile: Solidarity.Worker/Dockerfile
+          - service: email-worker
+            image: solidarity-email-worker
+            context: .
+            dockerfile: Solidarity.EmailWorker/Dockerfile
           - service: frontend
             image: solidarity-frontend
             context: ./frontend

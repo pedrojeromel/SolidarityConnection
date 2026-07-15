@@ -80,6 +80,36 @@ services:
         condition: service_healthy
     restart: unless-stopped
 
+  # Worker dedicado exclusivamente ao envio de e-mail (como uma function).
+  # Consome as filas de e-mail e dispara via SMTP. Localmente envia para o
+  # Mailpit; em producao, as credenciais vem de variaveis de ambiente.
+  email-worker:
+    image: ghcr.io/pedrojeromel/solidarity-email-worker:${APP_VERSION:-latest}
+    container_name: solidarity-email-worker
+    environment:
+      RabbitMq__Host: rabbitmq
+      Smtp__Host: ${SMTP_HOST:-mailpit}
+      Smtp__Port: ${SMTP_PORT:-1025}
+      Smtp__UseSsl: ${SMTP_USESSL:-false}
+      Smtp__Username: ${SMTP_USERNAME:-}
+      Smtp__Password: ${SMTP_PASSWORD:-}
+      Smtp__FromName: ${SMTP_FROMNAME:-Conexão Solidária}
+      Smtp__FromEmail: ${SMTP_FROMEMAIL:-nao-responda@conexaosolidaria.org}
+    depends_on:
+      rabbitmq:
+        condition: service_healthy
+    restart: unless-stopped
+
+  # Servidor SMTP de teste: captura os e-mails e mostra na interface web.
+  # Nao entrega para caixas reais — ideal para desenvolvimento e demonstracao.
+  mailpit:
+    image: axllent/mailpit:latest
+    container_name: solidarity-mailpit
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # interface web
+    restart: unless-stopped
+
   frontend:
     image: ghcr.io/pedrojeromel/solidarity-frontend:${APP_VERSION:-latest}
     container_name: solidarity-frontend

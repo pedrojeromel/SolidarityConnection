@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using Solidarity.Api.Controllers;
 using Solidarity.Api.Tests.Builders;
@@ -8,6 +9,7 @@ using Solidarity.Domain.Documents;
 using Solidarity.Domain.Enums;
 using Solidarity.Infrastructure.Data;
 using Solidarity.Shared.Events;
+using Solidarity.Shared.Messaging;
 
 namespace Solidarity.Api.Tests.Controllers;
 
@@ -29,7 +31,8 @@ public class DonationControllerTests : IDisposable
         _controller = new DonationController(
             _context,
             _repository.Object,
-            _publisher.Object)
+            _publisher.Object,
+            NullLogger<DonationController>.Instance)
         {
             ControllerContext =
                 AuthenticatedControllerContext.For(
@@ -64,7 +67,8 @@ public class DonationControllerTests : IDisposable
             x => x.PublishAsync(
                 It.Is<DonationReceivedEvent>(e =>
                     e.CampaignId == campaign.Id &&
-                    e.Amount == 150m)),
+                    e.Amount == 150m),
+                Queues.DonationReceived),
             Times.Once);
     }
 
@@ -151,8 +155,7 @@ public class DonationControllerTests : IDisposable
         Assert.IsType<BadRequestObjectResult>(result);
 
         _publisher.Verify(
-            x => x.PublishAsync(
-                It.IsAny<DonationReceivedEvent>()),
+            x => x.PublishAsync(It.IsAny<DonationReceivedEvent>(), It.IsAny<string>()),
             Times.Never);
 
         _repository.Verify(
@@ -177,8 +180,7 @@ public class DonationControllerTests : IDisposable
         Assert.IsType<NotFoundObjectResult>(result);
 
         _publisher.Verify(
-            x => x.PublishAsync(
-                It.IsAny<DonationReceivedEvent>()),
+            x => x.PublishAsync(It.IsAny<DonationReceivedEvent>(), It.IsAny<string>()),
             Times.Never);
     }
 

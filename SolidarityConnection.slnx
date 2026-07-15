@@ -10,8 +10,10 @@
   <Project Path="Solidarity.Infrastructure/Solidarity.Infrastructure.csproj" />
   <Project Path="Solidarity.Shared/Solidarity.Shared.csproj" />
   <Project Path="Solidarity.Worker/Solidarity.Worker.csproj" />
+  <Project Path="Solidarity.EmailWorker/Solidarity.EmailWorker.csproj" />
   <Folder Name="/tests/">
     <Project Path="tests/Solidarity.Api.Tests/Solidarity.Api.Tests.csproj" />
     <Project Path="tests/Solidarity.Domain.Tests/Solidarity.Domain.Tests.csproj" />
+    <Project Path="tests/Solidarity.EmailWorker.Tests/Solidarity.EmailWorker.Tests.csproj" />
   </Folder>
 </Solution>
