@@ -12,6 +12,21 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [1.6.0] — 2026-07-15
+
+### Adicionado
+
+- worker dedicado de envio de e-mail via mensageria
+
+### Imagens publicadas
+
+```text
+ghcr.io/pedrojeromel/solidarity-api:1.6.0
+ghcr.io/pedrojeromel/solidarity-worker:1.6.0
+ghcr.io/pedrojeromel/solidarity-frontend:1.6.0
+```
+---
+
 ## [1.5.0] — 2026-07-15
 
 ### Adicionado
