@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { campaignService } from '../services/campaign.service'
+import { statsService, type PlatformStats } from '../services/stats.service'
 import { CampaignCard } from '../components/CampaignCard'
 import { Badge, Button, Card, currency } from '../components/ui'
 import { useAuth } from '../hooks/useAuth'
@@ -31,20 +32,27 @@ const PARTNERS = [
   'COLETIVO RAÍZES',
 ]
 
-const CHART_BARS = [35, 48, 40, 62, 51, 70, 58, 78, 66, 85, 72, 92, 80, 100]
+const numberFmt = new Intl.NumberFormat('pt-BR')
 
 export function Home() {
   const { isAuthenticated } = useAuth()
   const [campaigns, setCampaigns] = useState<ActiveCampaign[]>([])
+  const [stats, setStats] = useState<PlatformStats | null>(null)
 
   useEffect(() => {
     campaignService
       .listActive()
       .then(setCampaigns)
       .catch(() => setCampaigns([]))
+
+    statsService
+      .get()
+      .then(setStats)
+      .catch(() => setStats(null))
   }, [])
 
-  const totalRaised = campaigns.reduce((s, c) => s + c.totalRaised, 0)
+  // Escala as barras do gráfico em relação ao maior dia do período.
+  const maxDaily = Math.max(1, ...(stats?.daily ?? []).map((d) => d.amount))
 
   return (
     <div className="space-y-24 sm:space-y-32">
@@ -124,9 +132,9 @@ export function Home() {
             <div className="p-4 sm:p-5">
               <div className="grid grid-cols-3 gap-2.5">
                 {[
-                  { l: 'Arrecadado', n: currency(totalRaised || 284310), d: '↑ 18,4%' },
-                  { l: 'Campanhas', n: String(campaigns.length || 12), d: 'ativas' },
-                  { l: 'Doações', n: '1.847', d: '↑ 12,1%' },
+                  { l: 'Arrecadado', n: currency(stats?.totalRaised ?? 0) },
+                  { l: 'Campanhas ativas', n: numberFmt.format(stats?.activeCampaigns ?? 0) },
+                  { l: 'Doações', n: numberFmt.format(stats?.totalDonations ?? 0) },
                 ].map((k) => (
                   <div
                     key={k.l}
@@ -134,7 +142,6 @@ export function Home() {
                   >
                     <div className="text-[11px] text-dim">{k.l}</div>
                     <div className="tnum mt-1.5 text-lg text-fg">{k.n}</div>
-                    <div className="mt-1 text-[10.5px] text-ok">{k.d}</div>
                   </div>
                 ))}
               </div>
@@ -142,20 +149,27 @@ export function Home() {
               <div className="mt-3 rounded-lg border border-line bg-bg-2 p-4">
                 <div className="mb-3 flex justify-between font-mono text-[11px] text-dim">
                   <span>arrecadação diária</span>
-                  <span>últimos 14 dias</span>
+                  <span>
+                    ticket médio {currency(stats?.averageTicket ?? 0)}
+                  </span>
                 </div>
                 <div className="flex h-20 items-end gap-1.5">
-                  {CHART_BARS.map((h, i) => (
-                    <div
-                      key={i}
-                      className={`flex-1 rounded-t-sm ${
-                        i >= 11
-                          ? 'bg-gradient-to-t from-brand to-brand-2'
-                          : 'bg-line-2'
-                      }`}
-                      style={{ height: `${h}%` }}
-                    />
-                  ))}
+                  {(stats?.daily ?? Array.from({ length: 14 }, () => ({ amount: 0 }))).map(
+                    (point, i, arr) => (
+                      <div
+                        key={i}
+                        title={currency(point.amount)}
+                        className={`flex-1 rounded-t-sm ${
+                          i === arr.length - 1
+                            ? 'bg-gradient-to-t from-brand to-brand-2'
+                            : 'bg-line-2'
+                        }`}
+                        style={{
+                          height: `${Math.max(4, (point.amount / maxDaily) * 100)}%`,
+                        }}
+                      />
+                    ),
+                  )}
                 </div>
               </div>
             </div>
