@@ -1,5 +1,8 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
+
+namespace: solidarity
+
 resources:
   - 00-namespace.yaml
   - 01-persistent-volumes.yaml
@@ -9,3 +12,33 @@ resources:
   - 04-rabbitmq.yaml
   - 05-api.yaml
   - 06-worker.yaml
+  - 07-observability-configmaps.yaml
+  - 08-prometheus.yaml
+  - 09-grafana.yaml
+  - 10-zabbix.yaml
+  - 11-blackbox-exporter.yaml
+  - 12-frontend.yaml
+  - 13-email.yaml
+  - 14-payment.yaml
+
+# Ponto unico de controle da versao publicada no cluster.
+# As imagens vem do GHCR (publicadas pelo CI): ninguem precisa compilar nada.
+#
+# Deploy de uma nova versao: altere newTag e rode `kubectl apply -k k8s`.
+# Rollback: volte newTag para a versao anterior (ou use `kubectl rollout undo`).
+images:
+  - name: solidarity-api
+    newName: ghcr.io/pedrojeromel/solidarity-api
+    newTag: "2.0.0"
+  - name: solidarity-worker
+    newName: ghcr.io/pedrojeromel/solidarity-worker
+    newTag: "2.0.0"
+  - name: solidarity-email-worker
+    newName: ghcr.io/pedrojeromel/solidarity-email-worker
+    newTag: "2.0.0"
+  - name: solidarity-payment-service
+    newName: ghcr.io/pedrojeromel/solidarity-payment-service
+    newTag: "2.0.0"
+  - name: solidarity-frontend
+    newName: ghcr.io/pedrojeromel/solidarity-frontend
+    newTag: "2.0.0"

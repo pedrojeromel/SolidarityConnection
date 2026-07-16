@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: solidarity-frontend
+  namespace: solidarity
+  labels:
+    app: solidarity-frontend
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    kubernetes.io/change-cause: "Deploy versao 1.0.0"
+spec:
+  replicas: 2
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  selector:
+    matchLabels:
+      app: solidarity-frontend
+  template:
+    metadata:
+      labels:
+        app: solidarity-frontend
+        app.kubernetes.io/version: "1.0.0"
+    spec:
+      containers:
+        - name: frontend
+          image: solidarity-frontend:1.0.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 300m
+              memory: 256Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: solidarity-frontend
+  namespace: solidarity
+spec:
+  type: ClusterIP
+  selector:
+    app: solidarity-frontend
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80

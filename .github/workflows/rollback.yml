@@ -1,0 +1,94 @@
+name: Rollback
+
+# Rollback do artefato publicado: reaponta a tag `latest` das imagens no GHCR
+# para uma versao anterior ja construida e testada pelo CI.
+#
+# Nao faz deploy: o cluster e o Compose rodam localmente e nao sao acessiveis
+# pelo GitHub. O rollback do ambiente em execucao e feito na maquina, com
+# `kubectl rollout undo` (Kubernetes) ou trocando APP_VERSION (Compose).
+# Veja a secao "Versionamento e Rollback" do README.
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Versão de destino já publicada no GHCR (ex.: 1.0.0-build.12)'
+        required: true
+        type: string
+
+env:
+  REGISTRY: ghcr.io
+
+jobs:
+  rollback:
+    name: Rollback para ${{ inputs.version }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      # Sequencial: evita deixar as imagens em versoes diferentes entre si
+      # caso uma delas falhe no meio do processo.
+      max-parallel: 1
+      matrix:
+        image: [solidarity-api, solidarity-worker, solidarity-frontend]
+    steps:
+      - name: Login GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Verificar se a versão existe
+        run: |
+          IMAGE="${REGISTRY}/${OWNER}/${{ matrix.image }}:${{ inputs.version }}"
+
+          if ! docker buildx imagetools inspect "$IMAGE" > /dev/null 2>&1; then
+            echo "::error::Imagem não encontrada no registro: $IMAGE"
+            echo "Rollback abortado. Confira as versões publicadas no GHCR."
+            exit 1
+          fi
+
+          echo "Imagem encontrada: $IMAGE"
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+      - name: Reapontar latest para a versão anterior
+        run: |
+          IMAGE="${REGISTRY}/${OWNER}/${{ matrix.image }}"
+
+          docker buildx imagetools create \
+            --tag "${IMAGE}:latest" \
+            "${IMAGE}:${{ inputs.version }}"
+
+          echo "${{ matrix.image }}:latest agora aponta para ${{ inputs.version }}"
+        env:
+          OWNER: ${{ github.repository_owner }}
+
+  summary:
+    name: Resumo
+    runs-on: ubuntu-latest
+    needs: rollback
+    steps:
+      - name: Instruções de rollback do ambiente
+        run: |
+          cat <<'EOF' >> "$GITHUB_STEP_SUMMARY"
+          ## Rollback concluído no registro
+
+          As imagens `latest` no GHCR agora apontam para **${{ inputs.version }}**.
+
+          ### Aplicar no ambiente em execução
+
+          Kubernetes:
+          ```bash
+          kubectl rollout undo deployment/solidarity-api -n solidarity
+          kubectl rollout undo deployment/solidarity-worker -n solidarity
+          kubectl rollout undo deployment/solidarity-frontend -n solidarity
+          ```
+
+          Docker Compose:
+          ```bash
+          APP_VERSION=${{ inputs.version }} docker compose up -d --no-build api worker frontend
+          ```
+          EOF

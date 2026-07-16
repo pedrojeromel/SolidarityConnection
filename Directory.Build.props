@@ -1,0 +1,15 @@
+<Project>
+
+  <!--
+    Versao unica de todos os assemblies .NET da solucao.
+    O CI sobrescreve com -p:Version=<versao> a partir do arquivo VERSION / tag git,
+    garantindo que binario, imagem Docker e tag do repositorio digam a mesma coisa.
+  -->
+  <PropertyGroup>
+    <Version Condition="'$(Version)' == ''">1.0.0</Version>
+    <AssemblyVersion>$(Version.Split('-')[0])</AssemblyVersion>
+    <FileVersion>$(Version.Split('-')[0])</FileVersion>
+    <InformationalVersion>$(Version)</InformationalVersion>
+  </PropertyGroup>
+
+</Project>

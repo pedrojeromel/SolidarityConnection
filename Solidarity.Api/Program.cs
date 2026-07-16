@@ -1,15 +1,16 @@
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
 using Solidarity.Infrastructure.Data;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.EntityFrameworkCore;
 using Solidarity.Api.Extensions;
+using Solidarity.Shared;
 using System.Text;
+using Prometheus;
 
 var builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddControllers();
-//builder.Services.AddEndpointsApiExplorer();
-//builder.Services.AddSwaggerGen();
 builder.Services.AddSwaggerDocumentation();
 builder.Services.AddScoped<IJwtTokenService, JwtTokenService>();
 
@@ -18,8 +19,25 @@ builder.Services.AddScoped<IMessagePublisher, RabbitMqPublisher>();
 
 builder.Services.AddAuthorization();
 
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("Frontend", policy =>
+    {
+        policy
+            .WithOrigins(
+                builder.Configuration
+                    .GetSection("Cors:AllowedOrigins")
+                    .Get<string[]>()
+                    ?? ["http://localhost:5173"])
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
+
 builder.Services.AddDatabase(builder.Configuration);
 builder.Services.AddJwtAuthentication(builder.Configuration);
+
+builder.Services.AddHealthChecks();
 
 var app = builder.Build();
 
@@ -33,14 +51,24 @@ using (var scope = app.Services.CreateScope())
     await DbSeeder.SeedAsync(db);
 }
 
-//if (app.Environment.IsDevelopment())
-//{
-//    app.UseSwaggerDocumentation();
-//}
-
 app.UseSwaggerDocumentation();
+app.UseHttpMetrics();
+app.UseCors("Frontend");
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapMetrics("/metrics");
+app.MapHealthChecks("/health");
+
+// Permite conferir qual versao esta efetivamente no ar — essencial para
+// validar um deploy ou confirmar que um rollback surtiu efeito.
+app.MapGet("/version", () => Results.Ok(new
+{
+    service = "Solidarity.Api",
+    version = AppVersion.Current,
+    environment = app.Environment.EnvironmentName
+}))
+.AllowAnonymous()
+.WithTags("Diagnostics");
 app.Run();
 

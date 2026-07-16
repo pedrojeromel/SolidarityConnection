@@ -1,0 +1,101 @@
+@import 'tailwindcss';
+
+@theme {
+  /* Superfícies — dark sóbrio, sem transparências */
+  --color-bg: #08090c;
+  --color-bg-2: #0d0f14;
+  --color-panel: #0f1218;
+  --color-line: #191d26;
+  --color-line-2: #262c38;
+
+  /* Texto */
+  --color-fg: #f2f4f8;
+  --color-muted: #9aa3b2;
+  --color-dim: #616b7c;
+
+  /* Um acento, só um: índigo */
+  --color-brand: #6366f1;
+  --color-brand-2: #818cf8;
+  --color-brand-soft: #141821;
+
+  /* Semânticos */
+  --color-ok: #10b981;
+  --color-warn: #f5a524;
+  --color-danger: #f43f5e;
+
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, 'SF Mono', 'Cascadia Mono', Menlo, monospace;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(16, 185, 129, 0);
+  }
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  background-color: var(--color-bg);
+  color: var(--color-fg);
+  font-family: var(--font-sans);
+  font-size: 15px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  letter-spacing: -0.006em;
+}
+
+/* Números sempre tabulares e monoespaçados: dá o ar de "sistema", não de folheto. */
+.tnum {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+.animate-rise {
+  animation: rise 480ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* Halo único e discreto no topo — substitui os vários "blobs" neon de antes. */
+.brand-glow {
+  position: fixed;
+  top: -30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 900px;
+  height: 600px;
+  pointer-events: none;
+  z-index: 0;
+  background: radial-gradient(
+    ellipse at center,
+    rgba(99, 102, 241, 0.13),
+    transparent 62%
+  );
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 9999px;
+  background: var(--color-ok);
+  animation: pulse-dot 2.4s ease-in-out infinite;
+}

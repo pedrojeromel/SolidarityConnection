@@ -3,8 +3,19 @@ kind: Deployment
 metadata:
   name: solidarity-worker
   namespace: solidarity
+  labels:
+    app: solidarity-worker
+    app.kubernetes.io/version: "1.0.0"
+  annotations:
+    kubernetes.io/change-cause: "Deploy versao 1.0.0"
 spec:
   replicas: 1
+  revisionHistoryLimit: 5
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   selector:
     matchLabels:
       app: solidarity-worker
@@ -12,6 +23,7 @@ spec:
     metadata:
       labels:
         app: solidarity-worker
+        app.kubernetes.io/version: "1.0.0"
     spec:
       initContainers:
         - name: wait-for-sqlserver
@@ -28,12 +40,22 @@ spec:
             - until nc -z rabbitmq 5672; do echo waiting for rabbitmq; sleep 2; done
       containers:
         - name: solidarity-worker
-          image: solidarity-worker:local
+          image: solidarity-worker:1.0.0
           imagePullPolicy: IfNotPresent
+          env:
+            - name: APP_VERSION
+              value: "1.0.0"
           volumeMounts:
             - name: worker-appsettings
               mountPath: /app/appsettings.json
               subPath: appsettings.json
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
       volumes:
         - name: worker-appsettings
           configMap:
