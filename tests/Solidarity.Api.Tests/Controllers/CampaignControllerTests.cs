@@ -141,6 +141,61 @@ public class CampaignControllerTests : IDisposable
         Assert.IsType<NotFoundResult>(result);
     }
 
+    [Fact]
+    public async Task Complete_WhenCampaignIsActive_ChangesStatusToCompleted()
+    {
+        // Arrange
+        var campaign = new CampaignBuilder()
+            .WithStatus(CampaignStatus.Active)
+            .Build();
+
+        await GivenCampaigns(campaign);
+
+        // Act
+        var result = await _controller.Complete(campaign.Id);
+
+        // Assert
+        Assert.IsType<NoContentResult>(result);
+
+        var persisted = await _context.Campaigns.FindAsync(campaign.Id);
+
+        Assert.Equal(CampaignStatus.Completed, persisted!.Status);
+    }
+
+    [Theory]
+    [InlineData(CampaignStatus.Completed)]
+    [InlineData(CampaignStatus.Cancelled)]
+    public async Task Complete_WhenCampaignIsNotActive_ReturnsBadRequest(
+        CampaignStatus status)
+    {
+        // Arrange
+        var campaign = new CampaignBuilder()
+            .WithStatus(status)
+            .Build();
+
+        await GivenCampaigns(campaign);
+
+        // Act
+        var result = await _controller.Complete(campaign.Id);
+
+        // Assert
+        Assert.IsType<BadRequestObjectResult>(result);
+
+        var persisted = await _context.Campaigns.FindAsync(campaign.Id);
+
+        Assert.Equal(status, persisted!.Status);
+    }
+
+    [Fact]
+    public async Task Complete_WhenCampaignDoesNotExist_ReturnsNotFound()
+    {
+        // Arrange & Act
+        var result = await _controller.Complete(Guid.NewGuid());
+
+        // Assert
+        Assert.IsType<NotFoundResult>(result);
+    }
+
     private static CreateCampaignRequest BuildCreateRequest()
     {
         return new CreateCampaignRequest

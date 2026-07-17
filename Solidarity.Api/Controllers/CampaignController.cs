@@ -141,4 +141,26 @@ public class CampaignController : ControllerBase
 
         return NoContent();
     }
+
+    [HttpPost("{id:guid}/complete")]
+    [Authorize(Roles = "NgoManager")]
+    public async Task<IActionResult> Complete(Guid id)
+    {
+        var campaign = await _context.Campaigns
+            .FirstOrDefaultAsync(x => x.Id == id);
+
+        if (campaign is null)
+            return NotFound();
+
+        if (campaign.Status != CampaignStatus.Active)
+            return BadRequest(
+                "Only active campaigns can be completed or closed.");
+
+        campaign.Status = CampaignStatus.Completed;
+        campaign.UpdatedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

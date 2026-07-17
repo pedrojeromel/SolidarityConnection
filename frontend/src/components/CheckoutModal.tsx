@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { lookupCep } from '../services/cep.service'
 import { paymentService } from '../services/payment.service'
 import { ApiError } from '../services/http'
 import { Alert, Button, Field } from './ui'
@@ -35,6 +36,8 @@ export function CheckoutModal({
   const [number, setNumber] = useState('')
   const [city, setCity] = useState('')
   const [uf, setUf] = useState('')
+  const [cepLoading, setCepLoading] = useState(false)
+  const [cepError, setCepError] = useState('')
 
   // Fecha no ESC; bloqueia o scroll do fundo enquanto a modal está aberta.
   useEffect(() => {
@@ -48,6 +51,45 @@ export function CheckoutModal({
       document.body.style.overflow = ''
     }
   }, [onClose, status])
+
+  // Preenche rua, cidade e UF automaticamente ao completar o CEP (ViaCEP).
+  useEffect(() => {
+    const digits = onlyDigits(cep)
+
+    if (digits.length !== 8) {
+      setCepLoading(false)
+      setCepError('')
+      return
+    }
+
+    let cancelled = false
+
+    async function resolve() {
+      setCepLoading(true)
+      setCepError('')
+
+      const address = await lookupCep(digits)
+
+      if (cancelled) return
+
+      setCepLoading(false)
+
+      if (!address) {
+        setCepError('CEP não encontrado. Preencha o endereço manualmente.')
+        return
+      }
+
+      setStreet(address.street)
+      setCity(address.city)
+      setUf(address.state)
+    }
+
+    void resolve()
+
+    return () => {
+      cancelled = true
+    }
+  }, [cep])
 
   async function pay(event: React.FormEvent) {
     event.preventDefault()
@@ -225,7 +267,7 @@ export function CheckoutModal({
                 <div className="grid grid-cols-[120px_1fr] gap-3">
                   <Field
                     id="cep"
-                    label="CEP"
+                    label={cepLoading ? 'CEP (buscando…)' : 'CEP'}
                     inputMode="numeric"
                     placeholder="00000-000"
                     value={cep}
@@ -238,6 +280,9 @@ export function CheckoutModal({
                     onChange={(e) => setStreet(e.target.value)}
                   />
                 </div>
+                {cepError && (
+                  <p className="text-xs text-danger">{cepError}</p>
+                )}
                 <div className="grid grid-cols-[100px_1fr_80px] gap-3">
                   <Field
                     id="number"

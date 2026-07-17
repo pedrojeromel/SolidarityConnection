@@ -88,8 +88,15 @@ export function loadSession(): Session | null {
 
     // Revalida o token guardado: um JWT expirado no localStorage
     // nao pode ressuscitar a sessao ao dar F5.
-    return createSession(session.token)
+    const restored = createSession(session.token)
+
+    if (!restored) {
+      clearSession()
+    }
+
+    return restored
   } catch {
+    clearSession()
     return null
   }
 }

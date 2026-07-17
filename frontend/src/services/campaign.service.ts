@@ -33,4 +33,11 @@ export const campaignService = {
       auth: true,
     })
   },
+
+  complete(id: string): Promise<void> {
+    return request<void>(`/api/campaigns/${id}/complete`, {
+      method: 'POST',
+      auth: true,
+    })
+  },
 }

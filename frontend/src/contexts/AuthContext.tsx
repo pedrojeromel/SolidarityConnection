@@ -1,7 +1,6 @@
 import {
   createContext,
   useCallback,
-  useEffect,
   useMemo,
   useState,
   type ReactNode,
@@ -27,11 +26,10 @@ interface AuthContextValue {
 export const AuthContext = createContext<AuthContextValue | null>(null)
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<Session | null>(null)
-
-  useEffect(() => {
-    setSession(loadSession())
-  }, [])
+  // Inicializa sincronamente a partir do localStorage. Se começar em null e
+  // só hidratar no useEffect, o RequireRole redireciona para /login no F5
+  // antes da sessão ser restaurada.
+  const [session, setSession] = useState<Session | null>(() => loadSession())
 
   const login = useCallback(async (credentials: Credentials) => {
     const { token } = await authService.login(credentials)

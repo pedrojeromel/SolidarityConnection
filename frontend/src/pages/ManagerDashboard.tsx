@@ -108,14 +108,23 @@ export function ManagerDashboard() {
     })
   }
 
-  async function cancel(id: string) {
+  async function complete(campaign: Campaign) {
+    const goalMet =
+      Number(campaign.totalRaised) >= Number(campaign.financialGoal)
+
     try {
-      await campaignService.cancel(id)
-      setSuccess('Campanha cancelada.')
+      await campaignService.complete(campaign.id)
+      setSuccess(
+        goalMet ? 'Campanha concluída.' : 'Campanha encerrada.',
+      )
 
       await load()
     } catch {
-      setError('Não foi possível cancelar a campanha.')
+      setError(
+        goalMet
+          ? 'Não foi possível concluir a campanha.'
+          : 'Não foi possível encerrar a campanha.',
+      )
     }
   }
 
@@ -214,53 +223,69 @@ export function ManagerDashboard() {
               <p className="text-muted">Nenhuma campanha cadastrada.</p>
             </Card>
           ) : (
-            campaigns.map((campaign) => (
-              <Card key={campaign.id} className="animate-rise space-y-4 p-5">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <h3 className="font-medium text-fg">{campaign.title}</h3>
+            campaigns.map((campaign) => {
+              const status = Number(campaign.status)
+              const isActive = status === CampaignStatus.Active
+              const goalMet =
+                Number(campaign.totalRaised) >= Number(campaign.financialGoal)
 
-                    <p className="text-sm text-muted">{campaign.description}</p>
+              return (
+                <Card key={campaign.id} className="animate-rise space-y-4 p-5">
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div>
+                      <h3 className="font-medium text-fg">{campaign.title}</h3>
+
+                      <p className="text-sm text-muted">{campaign.description}</p>
+                    </div>
+
+                    <span
+                      className={`rounded-md border px-2.5 py-1 font-mono text-[10.5px] tracking-wider uppercase ${STATUS_STYLE[status]}`}
+                    >
+                      {STATUS_LABEL[status]}
+                    </span>
                   </div>
 
-                  <span
-                    className={`rounded-md border px-2.5 py-1 font-mono text-[10.5px] tracking-wider uppercase ${STATUS_STYLE[campaign.status]}`}
-                  >
-                    {STATUS_LABEL[campaign.status]}
-                  </span>
-                </div>
+                  <div className="flex items-baseline gap-2">
+                    <span className="tnum text-xl text-fg">
+                      {currency(campaign.totalRaised)}
+                    </span>
 
-                <div className="flex items-baseline gap-2">
-                  <span className="tnum text-xl text-fg">
-                    {currency(campaign.totalRaised)}
-                  </span>
+                    <span className="font-mono text-xs text-dim">
+                      de {currency(campaign.financialGoal)}
+                    </span>
+                  </div>
 
-                  <span className="font-mono text-xs text-dim">
-                    de {currency(campaign.financialGoal)}
-                  </span>
-                </div>
+                  <ProgressBar
+                    raised={campaign.totalRaised}
+                    goal={campaign.financialGoal}
+                  />
 
-                <ProgressBar
-                  raised={campaign.totalRaised}
-                  goal={campaign.financialGoal}
-                />
+                  {isActive && (
+                    <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                      <Button variant="ghost" onClick={() => edit(campaign)}>
+                        Editar
+                      </Button>
 
-                <div className="flex flex-col gap-2 sm:flex-row">
-                  <Button variant="ghost" onClick={() => edit(campaign)}>
-                    Editar
-                  </Button>
-
-                  {campaign.status === CampaignStatus.Active && (
-                    <Button
-                      variant="danger"
-                      onClick={() => void cancel(campaign.id)}
-                    >
-                      Cancelar campanha
-                    </Button>
+                      {goalMet ? (
+                        <Button
+                          variant="brand"
+                          onClick={() => void complete(campaign)}
+                        >
+                          Concluir
+                        </Button>
+                      ) : (
+                        <Button
+                          variant="default"
+                          onClick={() => void complete(campaign)}
+                        >
+                          Encerrar
+                        </Button>
+                      )}
+                    </div>
                   )}
-                </div>
-              </Card>
-            ))
+                </Card>
+              )
+            })
           )}
         </div>
       </div>
