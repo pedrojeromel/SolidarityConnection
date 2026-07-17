@@ -29,16 +29,16 @@ resources:
 images:
   - name: solidarity-api
     newName: ghcr.io/pedrojeromel/solidarity-api
-    newTag: "2.0.0"
+    newTag: "2.0.1"
   - name: solidarity-worker
     newName: ghcr.io/pedrojeromel/solidarity-worker
-    newTag: "2.0.0"
+    newTag: "2.0.1"
   - name: solidarity-email-worker
     newName: ghcr.io/pedrojeromel/solidarity-email-worker
-    newTag: "2.0.0"
+    newTag: "2.0.1"
   - name: solidarity-payment-service
     newName: ghcr.io/pedrojeromel/solidarity-payment-service
-    newTag: "2.0.0"
+    newTag: "2.0.1"
   - name: solidarity-frontend
     newName: ghcr.io/pedrojeromel/solidarity-frontend
-    newTag: "2.0.0"
+    newTag: "2.0.1"

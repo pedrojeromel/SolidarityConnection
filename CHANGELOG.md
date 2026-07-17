@@ -12,6 +12,21 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [2.0.1] — 2026-07-17
+
+### Corrigido
+
+- ajustado erro de cep - concluir campanha e rotas
+
+### Imagens publicadas
+
+```text
+ghcr.io/jeromelpedro/solidarity-api:2.0.1
+ghcr.io/jeromelpedro/solidarity-worker:2.0.1
+ghcr.io/jeromelpedro/solidarity-frontend:2.0.1
+```
+---
+
 ## [2.0.0] — 2026-07-15
 
 ### Adicionado
