@@ -12,6 +12,17 @@ Para alterar a versão, use o script — ele mantém `VERSION`, `.env`,
 
 ---
 
+## [2.0.2] — 2026-07-22
+
+### Imagens publicadas
+
+```text
+ghcr.io/jeromelpedro/solidarity-api:2.0.2
+ghcr.io/jeromelpedro/solidarity-worker:2.0.2
+ghcr.io/jeromelpedro/solidarity-frontend:2.0.2
+```
+---
+
 ## [2.0.1] — 2026-07-17
 
 ### Corrigido
